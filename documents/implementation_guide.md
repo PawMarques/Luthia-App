@@ -1,4 +1,4 @@
-# Tonewood Database - Complete Implementation Guide
+# Tonewood App - Complete Implementation Guide
 
 ## Table of Contents
 1. [System Overview](#system-overview)
