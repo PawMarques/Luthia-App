@@ -1,4 +1,4 @@
-# Quick Start Guide - Tonewood Price Comparison
+# Quick Start Guide - Tonewood App
 
 Get your tonewood database up and running in under 10 minutes!
 
