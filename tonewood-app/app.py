@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
-from models import db, Species, Product, Vendor, Category, Grade, Format
+from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format
 import os
 import traceback
 
@@ -57,7 +57,7 @@ def index():
                 Product.format_id.isnot(None)
             ).distinct().order_by(Format.name).all()
             formats_by_category[cat.category_id] = cat_formats
-        species_list = Species.query.order_by(Species.commercial_name).limit(100).all()
+        species_list = Species.query.order_by(Species.commercial_name).all()
         
         # Build query with sorting
         query = Product.query
@@ -266,8 +266,11 @@ def index():
         """
         
         for s in species_list:
-            commercial = s.commercial_name if s.commercial_name else s.scientific_name
-            html += f'<option value="{s.species_id}">{commercial}</option>\n'
+            display = s.commercial_name if s.commercial_name else s.scientific_name
+            label = display
+            if s.swedish_name and s.swedish_name.lower() != display.lower():
+                label += f" / {s.swedish_name}"
+            html += f'<option value="{s.species_id}">{label}</option>\n'
         
         html += """
                     </select><br>
@@ -396,13 +399,18 @@ def index():
         """
         
         for p in products:
-            commercial = p.species.commercial_name if p.species.commercial_name else p.species.scientific_name
+            display_name = p.species.commercial_name if p.species.commercial_name else p.species.scientific_name
+            listed = p.species_as_listed or ''
+            # Show "listed as" note only when vendor name differs from our canonical name
+            listed_note = ''
+            if listed and listed.lower() != display_name.lower() and listed.lower() != p.species.scientific_name.lower():
+                listed_note = f'<br><span style="color:#999; font-size:11px;" title="Vendor lists this as: {listed}">({listed})</span>'
             grade = p.grade.name if p.grade else "-"
             format_name = p.format.name if p.format else "-"
             
             html += f"""
                 <tr>
-                    <td><strong>{commercial}</strong></td>
+                    <td><strong>{display_name}</strong>{listed_note}</td>
                     <td>{p.vendor.name}</td>
                     <td>{p.category.name}</td>
                     <td>{format_name}</td>
@@ -590,13 +598,17 @@ def search():
         """
         
         for p in products:
-            commercial = p.species.commercial_name if p.species.commercial_name else p.species.scientific_name
+            display_name = p.species.commercial_name if p.species.commercial_name else p.species.scientific_name
+            listed = p.species_as_listed or ''
+            listed_note = ''
+            if listed and listed.lower() != display_name.lower() and listed.lower() != p.species.scientific_name.lower():
+                listed_note = f'<br><span style="color:#999; font-size:11px;" title="Vendor lists this as: {listed}">({listed})</span>'
             grade = p.grade.name if p.grade else "-"
             format_name = p.format.name if p.format else "-"
             
             html += f"""
                 <tr>
-                    <td><strong>{commercial}</strong></td>
+                    <td><strong>{display_name}</strong>{listed_note}</td>
                     <td>{p.vendor.name}</td>
                     <td>{p.category.name}</td>
                     <td>{format_name}</td>
