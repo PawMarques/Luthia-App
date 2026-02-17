@@ -57,7 +57,15 @@ def index():
                 Product.format_id.isnot(None)
             ).distinct().order_by(Format.name).all()
             formats_by_category[cat.category_id] = cat_formats
-        species_list = Species.query.order_by(Species.commercial_name).all()
+        # Only species that have at least one product, with product count
+        from sqlalchemy import func
+        species_list = (
+            db.session.query(Species, func.count(Product.product_id).label('product_count'))
+            .join(Product, Product.species_id == Species.species_id)
+            .group_by(Species.species_id)
+            .order_by(Species.commercial_name)
+            .all()
+        )
         
         # Build query with sorting
         query = Product.query
@@ -265,12 +273,9 @@ def index():
                         <option value="">All Species</option>
         """
         
-        for s in species_list:
+        for s, count in species_list:
             display = s.commercial_name if s.commercial_name else s.scientific_name
-            label = display
-            if s.swedish_name and s.swedish_name.lower() != display.lower():
-                label += f" / {s.swedish_name}"
-            html += f'<option value="{s.species_id}">{label}</option>\n'
+            html += f'<option value="{s.species_id}">{display} ({count})</option>\n'
         
         html += """
                     </select><br>
