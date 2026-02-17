@@ -55,7 +55,7 @@ def import_basic_data():
             db.session.add(unit)
     
     db.session.commit()
-    print("✓ Basic data ready")
+    print("âœ“ Basic data ready")
 
 def import_species(file_path):
     """Import species from Excel"""
@@ -83,7 +83,7 @@ def import_species(file_path):
         count += 1
     
     db.session.commit()
-    print(f"✓ Imported {count} species")
+    print(f"âœ“ Imported {count} species")
 
 def import_vendor_products(file_path, sheet_name, vendor_name, country):
     """Import products from a vendor sheet"""
@@ -103,10 +103,27 @@ def import_vendor_products(file_path, sheet_name, vendor_name, country):
     
     count = 0
     skipped = 0
-    
-    sci_col = 'Species (scientific)' if 'Species (scientific)' in df.columns else 'Species (Latin)'
-    price_col = 'Price (SEK)' if 'Price (SEK)' in df.columns else 'Price (EUR)'
-    length_col = 'Length (mm)' if 'Length (mm)' in df.columns else 'Length (m)'
+
+    def find_col(columns, keywords, required=True):
+        """Find a column by searching for keywords (case-insensitive). 
+        Returns the first match, or None if not found.
+        Warns clearly if the column is required but missing."""
+        for keyword in keywords:
+            matches = [c for c in columns if keyword.lower() in c.lower()]
+            if matches:
+                return matches[0]
+        if required:
+            print(f"  ⚠️  WARNING: Could not find column matching {keywords} in sheet '{sheet_name}'")
+            print(f"     Available columns: {list(columns)}")
+        return None
+
+    sci_col   = find_col(df.columns, ['scientific', 'latin'], required=True)
+    price_col = find_col(df.columns, ['price (sek)', 'price (eur)'], required=True)
+    length_col = find_col(df.columns, ['length'], required=False)
+
+    if not sci_col or not price_col:
+        print(f"  ✗ Skipping {sheet_name} — required columns missing.")
+        return
     
     for _, row in df.iterrows():
         scientific_name = str(row[sci_col]).strip()
@@ -168,8 +185,8 @@ def import_vendor_products(file_path, sheet_name, vendor_name, country):
         width_mm = safe_float(row['Width (mm)'])
         
         # Handle length - convert meters to mm if needed
-        length_value = safe_float(row[length_col])
-        if length_value and length_col == 'Length (m)':
+        length_value = safe_float(row[length_col]) if length_col else None
+        if length_value and length_col and '(m)' in length_col and '(mm)' not in length_col:
             length_value = length_value * 1000
         
         weight_kg = safe_float(row['Weight (kg)'])
@@ -195,7 +212,7 @@ def import_vendor_products(file_path, sheet_name, vendor_name, country):
         count += 1
     
     db.session.commit()
-    print(f"✓ Imported {count} products ({skipped} skipped)")
+    print(f"âœ“ Imported {count} products ({skipped} skipped)")
 
 def run_import():
     """Main import function"""
@@ -204,18 +221,40 @@ def run_import():
     print("TONEWOOD DATA IMPORT")
     print("="*60)
     print("\nWhere is your Excel file?")
-    print("1. On Desktop (default)")
-    print("2. In the tonewood-app folder")
-    print("3. Somewhere else")
+    print("1. In the data-sources folder (default)")
+    print("2. Somewhere else")
     
-    choice = input("\nEnter 1, 2, or 3: ").strip()
+    choice = input("\nEnter 1 or 2: ").strip()
     
-    if choice == '1':
-        file_path = '../Tonewood_Species__With_Sources_v2_2.xlsx'
-    elif choice == '2':
-        file_path = input("Enter the filename: ").strip()
-    else:
+    if choice == '2':
         file_path = input("Enter full path to Excel file: ").strip()
+    else:
+        # Default: look in ../data-sources relative to this script
+        data_sources_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data-sources')
+        data_sources_dir = os.path.normpath(data_sources_dir)
+        
+        xlsx_files = sorted([f for f in os.listdir(data_sources_dir) if f.endswith('.xlsx')]) if os.path.isdir(data_sources_dir) else []
+        
+        if not xlsx_files:
+            print(f"\n  ✗ No .xlsx files found in: {data_sources_dir}")
+            print("     Please check the folder exists and contains Excel files.")
+            return
+        
+        print(f"\nFiles found in data-sources:")
+        for i, fname in enumerate(xlsx_files, 1):
+            print(f"  {i}. {fname}")
+        
+        file_choice = input(f"\nEnter number (1-{len(xlsx_files)}): ").strip()
+        
+        try:
+            file_index = int(file_choice) - 1
+            if not 0 <= file_index < len(xlsx_files):
+                raise ValueError
+        except ValueError:
+            print("  ✗ Invalid choice. Aborting.")
+            return
+        
+        file_path = os.path.join(data_sources_dir, xlsx_files[file_index])
     
     with app.app_context():
         db.create_all()
@@ -242,7 +281,7 @@ def run_import():
                 traceback.print_exc()
         
         print("-" * 60)
-        print("\n✅ IMPORT COMPLETE!\n")
+        print("\nâœ… IMPORT COMPLETE!\n")
         print(f"Total species: {Species.query.count()}")
         print(f"Total vendors: {Vendor.query.count()}")
         print(f"Total products: {Product.query.count()}")
