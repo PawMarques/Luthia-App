@@ -94,7 +94,7 @@ def index():
         def sort_url(column):
             if sort_by == column:
                 new_order = 'desc' if sort_order == 'asc' else 'asc'
-                arrow = ' â–²' if sort_order == 'asc' else ' â–¼'
+                arrow = ' ^' if sort_order == 'asc' else ' v'
             else:
                 new_order = 'asc'
                 arrow = ''
@@ -113,9 +113,9 @@ def index():
             
             # Previous button
             if page > 1:
-                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page-1}" class="page-btn">â† Previous</a>'
+                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page-1}" class="page-btn">Previous</a>'
             else:
-                html += '<span class="page-btn disabled">â† Previous</span>'
+                html += '<span class="page-btn disabled">Previous</span>'
             
             # Page numbers
             # Show: First page, pages around current, last page
@@ -151,9 +151,9 @@ def index():
             
             # Next button
             if page < total_pages:
-                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page+1}" class="page-btn">Next â†’</a>'
+                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page+1}" class="page-btn">Next</a>'
             else:
-                html += '<span class="page-btn disabled">Next â†’</span>'
+                html += '<span class="page-btn disabled">Next</span>'
             
             html += '</div>'
             return html
@@ -251,14 +251,14 @@ def index():
             </style>
         </head>
         <body>
-            <h1>ðŸŽ¸ Tonewood Price Comparison</h1>
+            <h1>Tonewood Price Comparison</h1>
             
             <div class="stats">
                 <strong>Database:</strong> """ + str(total_count) + """ products from """ + str(len(vendors)) + """ vendors
             </div>
             
             <div class="filters">
-                <h3>Search Products <button type="button" class="collapse-btn" onclick="toggleFilters()">â–¼ Hide Filters</button></h3>
+                <h3>Search Products <button type="button" class="collapse-btn" onclick="toggleFilters()">Hide Filters</button></h3>
                 <form action="/search" method="get">
                     <label>Species:</label>
                     <select name="species_id">
@@ -304,7 +304,7 @@ def index():
                     <label>Max Price:</label>
                     <input type="number" name="max_price" placeholder="e.g., 500"><br>
                     
-                    <button type="submit">ðŸ” Search</button>
+                    <button type="submit">Search</button>
                 </form>
             </div>
             
@@ -330,10 +330,10 @@ def index():
                     const btn = document.querySelector('.collapse-btn');
                     if (form.style.display === 'none') {
                         form.style.display = 'block';
-                        btn.textContent = 'â–¼ Hide Filters';
+                        btn.textContent = 'Hide Filters';
                     } else {
                         form.style.display = 'none';
-                        btn.textContent = 'â–¶ Show Filters';
+                        btn.textContent = 'Show Filters';
                     }
                 }
                 
@@ -375,7 +375,7 @@ def index():
         
         html += f"""
             <div class="sort-info">
-                ðŸ’¡ <strong>Tip:</strong> Click any column header to sort by that column
+                <strong>Tip:</strong> Click any column header to sort by that column
             </div>
 
             <div class="showing-info">
@@ -409,7 +409,7 @@ def index():
                     <td>{grade}</td>
                     <td><strong>{p.price:.2f} SEK</strong></td>
                     """ + staleness_cell(p.last_updated) + f"""
-                    <td><a href="{p.product_url}" target="_blank">View â†’</a></td>
+                    <td><a href="{p.product_url}" target="_blank">View</a></td>
                 </tr>
             """
         
@@ -479,7 +479,7 @@ def search():
     def sort_url(column):
         if sort_by == column:
             new_order = 'desc' if sort_order == 'asc' else 'asc'
-            arrow = ' â–²' if sort_order == 'asc' else ' â–¼'
+            arrow = ' ^' if sort_order == 'asc' else ' v'
         else:
             new_order = 'asc'
             arrow = ''
@@ -554,22 +554,22 @@ def search():
         </style>
     </head>
     <body>
-        <div class="back"><a href="/">â† Back to All Products</a></div>
-        <h1>ðŸ” Search Results</h1>
+        <div class="back"><a href="/">Back to All Products</a></div>
+        <h1>Search Results</h1>
         
         <div class="filters-applied">
             <strong>Filters:</strong> {filter_text}
         </div>
         
         <div class="sort-info">
-            ðŸ’¡ <strong>Tip:</strong> Click any column header to sort results
+            <strong>Tip:</strong> Click any column header to sort results
         </div>
     """
     
     if len(products) == 0:
         html += """
         <div class="no-results">
-            <h2>ðŸ˜• No products found</h2>
+            <h2>No products found</h2>
             <p>Try adjusting your filters or <a href="/">view all products</a></p>
         </div>
         """
@@ -603,7 +603,7 @@ def search():
                     <td>{grade}</td>
                     <td><strong>{p.price:.2f} {p.currency}</strong></td>
                     """ + staleness_cell(p.last_updated) + f"""
-                    <td><a href="{p.product_url}" target="_blank">View â†’</a></td>
+                    <td><a href="{p.product_url}" target="_blank">View</a></td>
                 </tr>
             """
         
@@ -621,7 +621,7 @@ def search():
 
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("ðŸŽ¸ Tonewood Price Comparison is starting...")
+    print("Tonewood Price Comparison is starting...")
     print("Open your browser and go to: http://localhost:5000")
     print("Press CTRL+C to stop the server")
     print("="*50 + "\n")
