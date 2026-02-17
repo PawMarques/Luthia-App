@@ -92,18 +92,16 @@ def import_species(file_path):
 def parse_vendor_info(sheet_name, file_path):
     """Extract vendor name and country from the title banner in row 0.
 
-    Expects a title like: 'GUITARS & WOODS (Portugal) - PRICING & AVAILABILITY'
+    Expects a title like: 'GUITARS & WOODS (Portugal)'
     Returns (vendor_name, country). Falls back to sheet name and None if unexpected format.
     """
     try:
         raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None, nrows=1)
         title = str(raw.iloc[0, 0]).strip()
 
-        # Extract country from parentheses e.g. "(Portugal)"
         country_match = re.search(r'\(([^)]+)\)', title)
         country = country_match.group(1).strip() if country_match else None
 
-        # Vendor name is everything before the first " - " or "("
         name_part = re.split(r'\s*[-\(]', title)[0].strip().title()
 
         if not name_part or name_part.lower() == 'nan':
@@ -121,6 +119,236 @@ def detect_vendor_sheets(file_path):
     return [s for s in xl.sheet_names if s != SPECIES_SHEET]
 
 
+def generate_diff(file_path, sheet_name):
+    """Compare Excel sheet against current DB for one vendor.
+
+    Matches products by URL where available, falls back to a composite key
+    (vendor + species + category + format) for rows without a URL.
+
+    Returns a dict with keys: new, removed, price_changes, stock_changes.
+    Each entry is a list of dicts describing the change.
+    """
+    vendor_name, _ = parse_vendor_info(sheet_name, file_path)
+    vendor = Vendor.query.filter_by(name=vendor_name).first()
+
+    diff = {'new': [], 'removed': [], 'price_changes': [], 'stock_changes': []}
+
+    # --- Load Excel rows into a normalised dict keyed by URL or composite ---
+    try:
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=1)
+    except Exception as e:
+        print(f"  Could not read sheet for diff: {e}")
+        return diff
+
+    def find_col(columns, keywords):
+        for keyword in keywords:
+            matches = [c for c in columns if keyword.lower() in c.lower()]
+            if matches:
+                return matches[0]
+        return None
+
+    sci_col   = find_col(df.columns, ['scientific', 'latin'])
+    price_col = find_col(df.columns, ['price (sek)', 'price (eur)'])
+
+    if not sci_col or not price_col:
+        return diff
+
+    excel_by_url = {}       # url -> row dict  (for rows that have a URL)
+    excel_no_url = []       # list of row dicts (for rows without a URL)
+
+    for _, row in df.iterrows():
+        scientific_name = str(row[sci_col]).strip()
+        if pd.isna(scientific_name) or scientific_name == 'nan':
+            continue
+
+        price = safe_float(row[price_col])
+        if price is None:
+            continue
+
+        category = str(row['Category']).strip() if pd.notna(row['Category']) else ''
+        format_name = str(row['Format']).strip() if pd.notna(row['Format']) else ''
+        in_stock = str(row['In Stock']).lower() == 'yes' if pd.notna(row['In Stock']) else True
+        url = str(row['Product URL']).strip() if pd.notna(row['Product URL']) else ''
+
+        label = f"{scientific_name} | {category} | {format_name or '-'} | {price:.2f} SEK"
+
+        entry = {
+            'species': scientific_name,
+            'category': category,
+            'format': format_name,
+            'price': price,
+            'in_stock': in_stock,
+            'url': url,
+            'label': label,
+        }
+
+        if url:
+            excel_by_url[url] = entry
+        else:
+            excel_no_url.append(entry)
+
+    # --- Load DB products for this vendor ---
+    if not vendor:
+        # No vendor in DB yet - everything in Excel is new
+        for entry in list(excel_by_url.values()) + excel_no_url:
+            diff['new'].append({'label': entry['label'], 'url': entry['url']})
+        return diff
+
+    db_products = Product.query.filter_by(vendor_id=vendor.vendor_id).all()
+
+    db_by_url = {}      # url -> Product
+    db_no_url = []      # Products without URL
+
+    for p in db_products:
+        if p.product_url:
+            db_by_url[p.product_url] = p
+        else:
+            db_no_url.append(p)
+
+    # --- Compare URL-matched products ---
+    for url, excel_row in excel_by_url.items():
+        if url not in db_by_url:
+            diff['new'].append({'label': excel_row['label'], 'url': url})
+        else:
+            db_p = db_by_url[url]
+            species_name = db_p.species.commercial_name or db_p.species.scientific_name
+            change_label = (f"{species_name} | "
+                           f"{db_p.category.name} | "
+                           f"{db_p.format.name if db_p.format else '-'}")
+
+            if abs((db_p.price or 0) - excel_row['price']) > 0.01:
+                diff['price_changes'].append({
+                    'label': change_label,
+                    'old_price': db_p.price,
+                    'new_price': excel_row['price'],
+                    'url': url,
+                })
+
+            db_in_stock = db_p.in_stock if db_p.in_stock is not None else True
+            if db_in_stock != excel_row['in_stock']:
+                diff['stock_changes'].append({
+                    'label': change_label,
+                    'old_stock': 'In stock' if db_in_stock else 'Out of stock',
+                    'new_stock': 'In stock' if excel_row['in_stock'] else 'Out of stock',
+                    'url': url,
+                })
+
+    # Removed = in DB but URL not in Excel
+    for url, db_p in db_by_url.items():
+        if url not in excel_by_url:
+            species_name = db_p.species.commercial_name or db_p.species.scientific_name
+            diff['removed'].append({
+                'label': (f"{species_name} | "
+                         f"{db_p.category.name} | "
+                         f"{db_p.format.name if db_p.format else '-'}"),
+                'url': url,
+            })
+
+    # --- Compare no-URL products by composite key ---
+    def composite_key(species, category, format_name):
+        return f"{species}|{category}|{format_name}"
+
+    db_no_url_keys = {
+        composite_key(
+            p.species.scientific_name,
+            p.category.name,
+            p.format.name if p.format else ''
+        ): p
+        for p in db_no_url
+    }
+
+    for entry in excel_no_url:
+        key = composite_key(entry['species'], entry['category'], entry['format'])
+        if key not in db_no_url_keys:
+            diff['new'].append({'label': entry['label'], 'url': ''})
+        else:
+            db_p = db_no_url_keys[key]
+            species_name = db_p.species.commercial_name or db_p.species.scientific_name
+            change_label = (f"{species_name} | "
+                           f"{db_p.category.name} | "
+                           f"{db_p.format.name if db_p.format else '-'}")
+
+            if abs((db_p.price or 0) - entry['price']) > 0.01:
+                diff['price_changes'].append({
+                    'label': change_label,
+                    'old_price': db_p.price,
+                    'new_price': entry['price'],
+                    'url': '',
+                })
+
+            db_in_stock = db_p.in_stock if db_p.in_stock is not None else True
+            if db_in_stock != entry['in_stock']:
+                diff['stock_changes'].append({
+                    'label': change_label,
+                    'old_stock': 'In stock' if db_in_stock else 'Out of stock',
+                    'new_stock': 'In stock' if entry['in_stock'] else 'Out of stock',
+                    'url': '',
+                })
+
+    for key, db_p in db_no_url_keys.items():
+        excel_keys = {
+            composite_key(e['species'], e['category'], e['format'])
+            for e in excel_no_url
+        }
+        if key not in excel_keys:
+            species_name = db_p.species.commercial_name or db_p.species.scientific_name
+            diff['removed'].append({
+                'label': (f"{species_name} | "
+                         f"{db_p.category.name} | "
+                         f"{db_p.format.name if db_p.format else '-'}"),
+                'url': '',
+            })
+
+    return diff
+
+
+def print_diff(vendor_name, diff):
+    """Print a formatted diff report for one vendor."""
+    new      = diff['new']
+    removed  = diff['removed']
+    prices   = diff['price_changes']
+    stock    = diff['stock_changes']
+
+    total = len(new) + len(removed) + len(prices) + len(stock)
+
+    print(f"\n  {vendor_name}:")
+
+    if total == 0:
+        print("    No changes detected")
+        return
+
+    if new:
+        print(f"    + {len(new)} new product(s):")
+        for item in new[:5]:
+            print(f"        {item['label']}")
+        if len(new) > 5:
+            print(f"        ... and {len(new) - 5} more")
+
+    if removed:
+        print(f"    - {len(removed)} removed product(s):")
+        for item in removed[:5]:
+            print(f"        {item['label']}")
+        if len(removed) > 5:
+            print(f"        ... and {len(removed) - 5} more")
+
+    if prices:
+        print(f"    ~ {len(prices)} price change(s):")
+        for item in prices[:5]:
+            direction = "up" if item['new_price'] > item['old_price'] else "down"
+            print(f"        {item['label']}")
+            print(f"            {item['old_price']:.2f} -> {item['new_price']:.2f} SEK ({direction})")
+        if len(prices) > 5:
+            print(f"        ... and {len(prices) - 5} more")
+
+    if stock:
+        print(f"    ~ {len(stock)} stock change(s):")
+        for item in stock[:5]:
+            print(f"        {item['label']}")
+            print(f"            {item['old_stock']} -> {item['new_stock']}")
+        if len(stock) > 5:
+            print(f"        ... and {len(stock) - 5} more")
+
+
 def import_vendor_products(file_path, sheet_name):
     """Import products from a vendor sheet, extracting vendor info from the title banner."""
 
@@ -133,9 +361,12 @@ def import_vendor_products(file_path, sheet_name):
         db.session.add(vendor)
         db.session.commit()
     elif country and vendor.country != country:
-        # Update country if it has changed in the title banner
         vendor.country = country
         db.session.commit()
+
+    # Clear existing products for this vendor before re-importing
+    Product.query.filter_by(vendor_id=vendor.vendor_id).delete()
+    db.session.commit()
 
     try:
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=1)
@@ -147,8 +378,6 @@ def import_vendor_products(file_path, sheet_name):
     skipped = 0
 
     def find_col(columns, keywords, required=True):
-        """Find a column by searching for keywords (case-insensitive).
-        Returns the first match, warns clearly if a required column is missing."""
         for keyword in keywords:
             matches = [c for c in columns if keyword.lower() in c.lower()]
             if matches:
@@ -299,13 +528,42 @@ def run_import():
     with app.app_context():
         db.create_all()
 
+        vendor_sheets = detect_vendor_sheets(file_path)
+
+        # --- Diff report ---
+        print("\n" + "="*60)
+        print("CHANGE REPORT")
+        print("="*60)
+
+        all_diffs = {}
+        any_changes = False
+
+        for sheet_name in vendor_sheets:
+            vendor_name, _ = parse_vendor_info(sheet_name, file_path)
+            diff = generate_diff(file_path, sheet_name)
+            all_diffs[sheet_name] = diff
+            print_diff(vendor_name, diff)
+
+            if any(diff[k] for k in diff):
+                any_changes = True
+
+        if not any_changes:
+            print("\n  Database is already up to date.")
+
+        # --- Confirm before proceeding ---
+        print("\n" + "="*60)
+        confirm = input("Proceed with import? (y/n): ").strip().lower()
+        if confirm != 'y':
+            print("  Import cancelled.")
+            return
+
+        # --- Run import ---
         print("\nStarting import...")
         print("-" * 60)
 
         import_basic_data()
         import_species(file_path)
 
-        vendor_sheets = detect_vendor_sheets(file_path)
         print(f"\nDetected {len(vendor_sheets)} vendor sheet(s): {', '.join(vendor_sheets)}")
         print("-" * 60)
 
