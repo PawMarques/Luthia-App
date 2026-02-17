@@ -6,7 +6,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask
-from models import db, Species, Vendor, Category, Grade, Format, Unit, Product
+from models import db, Species, SpeciesAlias, Vendor, Category, Grade, Format, Unit, Product
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -60,33 +60,133 @@ def import_basic_data():
     print("  Done")
 
 
-def import_species(file_path):
-    """Import species from Excel. Skips gracefully if sheet not present."""
-    xl = pd.ExcelFile(file_path)
+def _safe_str(value):
+    """Return stripped string or None for NaN/empty values."""
+    if pd.isna(value):
+        return None
+    s = str(value).strip()
+    return s if s and s.lower() != 'nan' else None
+
+
+def _add_alias(species, alias_name, language, source='species_sheet'):
+    """Add an alias for a species if not already present."""
+    if not alias_name:
+        return
+    exists = SpeciesAlias.query.filter_by(
+        species_id=species.species_id, alias_name=alias_name
+    ).first()
+    if not exists:
+        db.session.add(SpeciesAlias(
+            species_id=species.species_id,
+            alias_name=alias_name,
+            language=language,
+            source=source,
+        ))
+
+
+def import_species(species_file_path):
+    """
+    Import species from the dedicated species reference Excel file.
+    Populates all name columns on Species and builds the SpeciesAlias table.
+    Skips gracefully if the sheet is not present.
+    """
+    xl = pd.ExcelFile(species_file_path)
     if SPECIES_SHEET not in xl.sheet_names:
         print(f"  No '{SPECIES_SHEET}' sheet found - skipping species pre-load.")
         print(f"  (Species will still be added automatically from vendor sheets.)")
         return
 
-    print("Importing wood species...")
-    df = pd.read_excel(file_path, sheet_name=SPECIES_SHEET, header=1)
+    print("Importing wood species and aliases...")
+    df = pd.read_excel(species_file_path, sheet_name=SPECIES_SHEET, header=1)
 
-    count = 0
+    # Column name map — tolerant of minor variations
+    col = {}
+    for c in df.columns:
+        cl = c.strip().upper()
+        if 'SCIENTIFIC' in cl:           col['sci']      = c
+        elif cl == 'COMMERCIAL NAME':    col['comm']     = c
+        elif 'ALT. COMMERCIAL' in cl:    col['alt_comm'] = c
+        elif cl == 'ENGLISH':            col['en']       = c
+        elif 'ALT. ENGLISH' in cl:       col['alt_en']   = c
+        elif cl == 'SWEDISH':            col['sv']       = c
+        elif 'ALT. SWEDISH' in cl:       col['alt_sv']   = c
+        elif cl == 'PORTUGUESE':         col['pt']       = c
+        elif 'ALT. PORTUGUESE' in cl:    col['alt_pt']   = c
+        elif 'ORIGIN' in cl:             col['origin']   = c
+        elif 'CITES' in cl:              col['cites']    = c
+
+    count_new = 0
+    count_updated = 0
+
     for _, row in df.iterrows():
-        scientific_name = str(row['SCIENTIFIC NAME']).strip()
-
-        if pd.isna(scientific_name) or scientific_name == 'nan':
+        scientific_name = _safe_str(row.get(col.get('sci', ''), None))
+        if not scientific_name:
             continue
 
-        if Species.query.filter_by(scientific_name=scientific_name).first():
-            continue
+        commercial_name    = _safe_str(row.get(col.get('comm', ''),     None))
+        alt_commercial     = _safe_str(row.get(col.get('alt_comm', ''), None))
+        english_name       = _safe_str(row.get(col.get('en', ''),       None))
+        alt_english        = _safe_str(row.get(col.get('alt_en', ''),   None))
+        swedish_name       = _safe_str(row.get(col.get('sv', ''),       None))
+        alt_swedish        = _safe_str(row.get(col.get('alt_sv', ''),   None))
+        portuguese_name    = _safe_str(row.get(col.get('pt', ''),       None))
+        alt_portuguese     = _safe_str(row.get(col.get('alt_pt', ''),   None))
+        origin             = _safe_str(row.get(col.get('origin', ''),   None))
+        cites_raw          = _safe_str(row.get(col.get('cites', ''),    None))
+        cites_listed       = bool(cites_raw) if cites_raw else False
 
-        commercial_name = str(row['COMMERCIAL NAME']).strip() if pd.notna(row['COMMERCIAL NAME']) else None
-        db.session.add(Species(scientific_name=scientific_name, commercial_name=commercial_name))
-        count += 1
+        species = Species.query.filter_by(scientific_name=scientific_name).first()
+
+        if not species:
+            species = Species(scientific_name=scientific_name)
+            db.session.add(species)
+            db.session.flush()   # get species_id before adding aliases
+            count_new += 1
+        else:
+            count_updated += 1
+
+        # Update all name fields
+        species.commercial_name    = commercial_name    or species.commercial_name
+        species.alt_commercial_name= alt_commercial     or species.alt_commercial_name
+        species.english_name       = english_name       or species.english_name
+        species.alt_english_name   = alt_english        or species.alt_english_name
+        species.swedish_name       = swedish_name       or species.swedish_name
+        species.alt_swedish_name   = alt_swedish        or species.alt_swedish_name
+        species.portuguese_name    = portuguese_name    or species.portuguese_name
+        species.alt_portuguese_name= alt_portuguese     or species.alt_portuguese_name
+        species.origin             = origin             or species.origin
+        species.cites_listed       = cites_listed
+
+        # Register every non-null name as a searchable alias
+        _add_alias(species, commercial_name,  'english',    'species_sheet')
+        _add_alias(species, alt_commercial,   'english',    'species_sheet')
+        _add_alias(species, english_name,     'english',    'species_sheet')
+        _add_alias(species, alt_english,      'english',    'species_sheet')
+        _add_alias(species, swedish_name,     'swedish',    'species_sheet')
+        _add_alias(species, alt_swedish,      'swedish',    'species_sheet')
+        _add_alias(species, portuguese_name,  'portuguese', 'species_sheet')
+        _add_alias(species, alt_portuguese,   'portuguese', 'species_sheet')
 
     db.session.commit()
-    print(f"  Imported {count} species")
+    print(f"  {count_new} new species, {count_updated} updated")
+    alias_count = SpeciesAlias.query.count()
+    print(f"  {alias_count} aliases registered")
+
+
+def build_alias_lookup():
+    """
+    Return a dict mapping every known alias name (case-insensitive) to its
+    Species object.  Used during product import to resolve vendor-listed names.
+    Also includes scientific names as keys for direct lookup.
+    """
+    lookup = {}
+    for species in Species.query.all():
+        lookup[species.scientific_name.lower()] = species
+        if species.commercial_name:
+            lookup[species.commercial_name.lower()] = species
+    for alias in SpeciesAlias.query.all():
+        lookup[alias.alias_name.lower()] = alias.species
+    return lookup
 
 
 def parse_vendor_info(sheet_name, file_path):
@@ -349,8 +449,14 @@ def print_diff(vendor_name, diff):
             print(f"        ... and {len(stock) - 5} more")
 
 
-def import_vendor_products(file_path, sheet_name):
-    """Import products from a vendor sheet, extracting vendor info from the title banner."""
+def import_vendor_products(file_path, sheet_name, alias_lookup=None):
+    """Import products from a vendor sheet, extracting vendor info from the title banner.
+    
+    alias_lookup: dict mapping lowercase name -> Species, built by build_alias_lookup().
+                  If None, falls back to direct scientific name query only.
+    """
+    if alias_lookup is None:
+        alias_lookup = build_alias_lookup()
 
     vendor_name, country = parse_vendor_info(sheet_name, file_path)
     print(f"Importing {vendor_name} ({country or 'country unknown'})...")
@@ -390,6 +496,7 @@ def import_vendor_products(file_path, sheet_name):
     sci_col    = find_col(df.columns, ['scientific', 'latin'], required=True)
     price_col  = find_col(df.columns, ['price (sek)', 'price (eur)'], required=True)
     length_col = find_col(df.columns, ['length'], required=False)
+    listed_col = find_col(df.columns, ['as listed', 'listed'], required=False)
 
     if not sci_col or not price_col:
         print(f"  Skipping {sheet_name} - required columns missing.")
@@ -402,13 +509,32 @@ def import_vendor_products(file_path, sheet_name):
             skipped += 1
             continue
 
-        species = Species.query.filter_by(scientific_name=scientific_name).first()
+        # --- Resolve species ---
+        # 1. Try scientific name via alias lookup (covers direct scientific match too)
+        species = alias_lookup.get(scientific_name.lower())
+
+        # 2. Try 'as listed' name via alias lookup
+        listed_name = None
+        if listed_col and pd.notna(row[listed_col]):
+            listed_name = str(row[listed_col]).strip()
+            if not species and listed_name:
+                species = alias_lookup.get(listed_name.lower())
+
+        # 3. Fall back: create a new species record from scientific name
         if not species:
-            commercial = str(row[df.columns[1]]).strip() if pd.notna(row[df.columns[1]]) else None
+            commercial = _safe_str(row[df.columns[1]]) if len(df.columns) > 1 else None
             species = Species(scientific_name=scientific_name, commercial_name=commercial)
             db.session.add(species)
             db.session.flush()
-            print(f"  Added missing species: {scientific_name}")
+            print(f"  Added unrecognised species: {scientific_name}")
+            # Add to lookup so subsequent rows with same name don't create duplicates
+            alias_lookup[scientific_name.lower()] = species
+
+        # 4. Register the vendor's listed name as a vendor alias if it's new
+        if listed_name and listed_name.lower() not in alias_lookup:
+            _add_alias(species, listed_name, 'vendor', source='vendor_sheet')
+            db.session.flush()
+            alias_lookup[listed_name.lower()] = species
 
         if pd.isna(row['Category']):
             skipped += 1
@@ -476,6 +602,7 @@ def import_vendor_products(file_path, sheet_name):
             grade_id=grade.grade_id if grade else None,
             format_id=format_obj.format_id if format_obj else None,
             unit_id=unit.unit_id if unit else None,
+            species_as_listed=listed_name or scientific_name,
             thickness_mm=thickness_mm,
             width_mm=width_mm,
             length_mm=length_value,
@@ -499,14 +626,16 @@ def run_import():
     print("\n" + "="*60)
     print("TONEWOOD DATA IMPORT")
     print("="*60)
-    print("\nWhere is your Excel file?")
+    print("\nWhere are your Excel files?")
     print("1. In the data-sources folder (default)")
-    print("2. Somewhere else")
+    print("2. Specify paths manually")
 
     choice = input("\nEnter 1 or 2: ").strip()
 
     if choice == '2':
-        file_path = input("Enter full path to Excel file: ").strip()
+        suppliers_file = input("Enter full path to suppliers Excel file: ").strip()
+        species_file   = input("Enter full path to species Excel file (or press Enter to skip): ").strip()
+        species_file   = species_file or None
     else:
         data_sources_dir = os.path.normpath(
             os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data-sources')
@@ -525,22 +654,44 @@ def run_import():
         for i, fname in enumerate(xlsx_files, 1):
             print(f"  {i}. {fname}")
 
-        file_choice = input(f"\nEnter number (1-{len(xlsx_files)}): ").strip()
-
+        # Suppliers file
+        sup_choice = input(f"\nEnter number for SUPPLIERS file (1-{len(xlsx_files)}): ").strip()
         try:
-            file_index = int(file_choice) - 1
-            if not 0 <= file_index < len(xlsx_files):
+            sup_index = int(sup_choice) - 1
+            if not 0 <= sup_index < len(xlsx_files):
                 raise ValueError
         except ValueError:
             print("  Invalid choice. Aborting.")
             return
+        suppliers_file = os.path.join(data_sources_dir, xlsx_files[sup_index])
 
-        file_path = os.path.join(data_sources_dir, xlsx_files[file_index])
+        # Species file (optional, auto-detect if only one other xlsx)
+        others = [f for i, f in enumerate(xlsx_files) if i != sup_index]
+        if others:
+            print(f"\nSpecies reference files:")
+            for i, fname in enumerate(others, 1):
+                print(f"  {i}. {fname}")
+            sp_choice = input(f"Enter number for SPECIES file (or press Enter to skip): ").strip()
+            if sp_choice:
+                try:
+                    sp_index = int(sp_choice) - 1
+                    if not 0 <= sp_index < len(others):
+                        raise ValueError
+                    species_file = os.path.join(data_sources_dir, others[sp_index])
+                except ValueError:
+                    print("  Invalid choice, skipping species file.")
+                    species_file = None
+            else:
+                species_file = None
+        else:
+            species_file = None
+
+        file_path = suppliers_file  # keep for diff report
 
     with app.app_context():
         db.create_all()
 
-        vendor_sheets = detect_vendor_sheets(file_path)
+        vendor_sheets = detect_vendor_sheets(suppliers_file)
 
         # --- Diff report ---
         print("\n" + "="*60)
@@ -551,8 +702,8 @@ def run_import():
         any_changes = False
 
         for sheet_name in vendor_sheets:
-            vendor_name, _ = parse_vendor_info(sheet_name, file_path)
-            diff = generate_diff(file_path, sheet_name)
+            vendor_name, _ = parse_vendor_info(sheet_name, suppliers_file)
+            diff = generate_diff(suppliers_file, sheet_name)
             all_diffs[sheet_name] = diff
             print_diff(vendor_name, diff)
 
@@ -574,14 +725,23 @@ def run_import():
         print("-" * 60)
 
         import_basic_data()
-        import_species(file_path)
+
+        # Import species reference first (builds the alias table)
+        if species_file:
+            import_species(species_file)
+        else:
+            print("  No species file provided - aliases will be built from vendor data only.")
+
+        # Build alias lookup once for all vendor imports
+        alias_lookup = build_alias_lookup()
+        print(f"  Alias lookup ready: {len(alias_lookup)} entries")
 
         print(f"\nDetected {len(vendor_sheets)} vendor sheet(s): {', '.join(vendor_sheets)}")
         print("-" * 60)
 
         for sheet_name in vendor_sheets:
             try:
-                import_vendor_products(file_path, sheet_name)
+                import_vendor_products(suppliers_file, sheet_name, alias_lookup=alias_lookup)
             except Exception as e:
                 print(f"  Error importing sheet '{sheet_name}': {e}")
                 import traceback
@@ -590,6 +750,7 @@ def run_import():
         print("-" * 60)
         print("\nIMPORT COMPLETE!\n")
         print(f"Total species:  {Species.query.count()}")
+        print(f"Total aliases:  {SpeciesAlias.query.count()}")
         print(f"Total vendors:  {Vendor.query.count()}")
         print(f"Total products: {Product.query.count()}")
         print("\nYou can now run the website with: python3 app.py")
