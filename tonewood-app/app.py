@@ -46,26 +46,36 @@ def index():
         page = request.args.get('page', 1, type=int)
         per_page = 10
         
-        # Only load what we need for dropdowns
-        vendors = Vendor.query.filter_by(active=True).all()
-        categories = Category.query.all()
-        # Get all formats with their categories for filtering
-        formats_by_category = {}
-        for cat in categories:
-            cat_formats = db.session.query(Format).join(Product).filter(
-                Product.category_id == cat.category_id,
-                Product.format_id.isnot(None)
-            ).distinct().order_by(Format.name).all()
-            formats_by_category[cat.category_id] = cat_formats
-        # Only species that have at least one product, with product count
+        # Only load what we need for dropdowns — all with product counts
         from sqlalchemy import func
-        species_list = (
-            db.session.query(Species, func.count(Product.product_id).label('product_count'))
-            .join(Product, Product.species_id == Species.species_id)
-            .group_by(Species.species_id)
-            .order_by(Species.commercial_name)
+        vendors = (
+            db.session.query(Vendor, func.count(Product.product_id).label('product_count'))
+            .join(Product, Product.vendor_id == Vendor.vendor_id)
+            .filter(Vendor.active == True)
+            .group_by(Vendor.vendor_id)
+            .order_by(Vendor.name)
             .all()
         )
+        categories = (
+            db.session.query(Category, func.count(Product.product_id).label('product_count'))
+            .join(Product, Product.category_id == Category.category_id)
+            .group_by(Category.category_id)
+            .order_by(Category.name)
+            .all()
+        )
+        # Formats grouped by category, each with a product count
+        formats_by_category = {}
+        for cat, _ in categories:
+            cat_formats = (
+                db.session.query(Format, func.count(Product.product_id).label('product_count'))
+                .join(Product, Product.format_id == Format.format_id)
+                .filter(Product.category_id == cat.category_id)
+                .group_by(Format.format_id)
+                .order_by(Format.name)
+                .all()
+            )
+            formats_by_category[cat.category_id] = cat_formats
+        species_list = Species.query.order_by(Species.commercial_name).all()
         
         # Build query with sorting
         query = Product.query
@@ -273,9 +283,12 @@ def index():
                         <option value="">All Species</option>
         """
         
-        for s, count in species_list:
+        for s in species_list:
             display = s.commercial_name if s.commercial_name else s.scientific_name
-            html += f'<option value="{s.species_id}">{display} ({count})</option>\n'
+            label = display
+            if s.swedish_name and s.swedish_name.lower() != display.lower():
+                label += f" / {s.swedish_name}"
+            html += f'<option value="{s.species_id}">{label}</option>\n'
         
         html += """
                     </select><br>
@@ -285,8 +298,8 @@ def index():
                         <option value="">All Vendors</option>
         """
         
-        for v in vendors:
-            html += f'<option value="{v.vendor_id}">{v.name} ({v.country})</option>\n'
+        for v, count in vendors:
+            html += f'<option value="{v.vendor_id}">{v.name} · {v.country} ({count})</option>\n'
         
         html += """
                     </select><br>
@@ -296,8 +309,8 @@ def index():
                         <option value="">All Categories</option>
         """
         
-        for c in categories:
-            html += f'<option value="{c.category_id}">{c.name}</option>\n'
+        for c, count in categories:
+            html += f'<option value="{c.category_id}">{c.name} ({count})</option>\n'
         
         html += """
                     </select><br>
@@ -321,13 +334,12 @@ def index():
                 const formatsByCategory = {
         """
         
-        # Add format data as JavaScript object
+        # Add format data as JavaScript object (name includes count for display)
         for cat_id, formats in formats_by_category.items():
             format_list = []
-            for f in formats:
-                # Escape quotes in format name for JavaScript
+            for f, count in formats:
                 safe_name = f.name.replace('"', '\\"').replace("'", "\\'")
-                format_list.append(f'{{"id": {f.format_id}, "name": "{safe_name}"}}')
+                format_list.append(f'{{"id": {f.format_id}, "name": "{safe_name} ({count})"}}')
             html += f'        "{cat_id}": [{", ".join(format_list)}],\n'
         
         html += """
