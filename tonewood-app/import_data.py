@@ -35,7 +35,7 @@ def safe_float(value):
     
     try:
         return float(value_str)
-    except:
+    except (ValueError, TypeError):
         return None
 
 def import_basic_data():
