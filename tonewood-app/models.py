@@ -8,11 +8,48 @@ class Species(db.Model):
     
     species_id = db.Column(db.Integer, primary_key=True)
     scientific_name = db.Column(db.String(100), unique=True, nullable=False)
-    commercial_name = db.Column(db.String(100))
+    commercial_name = db.Column(db.String(100))   # Default display name (English)
+    alt_commercial_name = db.Column(db.String(100))
+    english_name = db.Column(db.String(100))
+    alt_english_name = db.Column(db.String(100))
+    swedish_name = db.Column(db.String(100))
+    alt_swedish_name = db.Column(db.String(100))
+    portuguese_name = db.Column(db.String(100))
+    alt_portuguese_name = db.Column(db.String(100))
+    origin = db.Column(db.String(200))
     cites_listed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     products = db.relationship('Product', back_populates='species')
+    aliases = db.relationship('SpeciesAlias', back_populates='species',
+                               cascade='all, delete-orphan')
+
+    def display_name(self):
+        """Return the preferred display name: commercial > scientific."""
+        return self.commercial_name or self.scientific_name
+
+
+class SpeciesAlias(db.Model):
+    """
+    All known alternate names for a species, used during import to resolve
+    vendor-listed names (e.g. 'Ask', 'Hard Maple', 'Lönn') to the canonical
+    Species record.  Also serves as a searchable name index in the web UI.
+    """
+    __tablename__ = 'species_aliases'
+
+    alias_id    = db.Column(db.Integer, primary_key=True)
+    species_id  = db.Column(db.Integer, db.ForeignKey('species.species_id'),
+                            nullable=False)
+    alias_name  = db.Column(db.String(100), nullable=False)
+    language    = db.Column(db.String(20))   # e.g. 'english', 'swedish', 'portuguese', 'vendor'
+    source      = db.Column(db.String(50))   # e.g. 'species_sheet', 'vendor_sheet', 'manual'
+
+    # Unique constraint: same alias can't appear twice for the same species
+    __table_args__ = (
+        db.UniqueConstraint('species_id', 'alias_name', name='uq_species_alias'),
+    )
+
+    species = db.relationship('Species', back_populates='aliases')
 
 class Vendor(db.Model):
     __tablename__ = 'vendors'
