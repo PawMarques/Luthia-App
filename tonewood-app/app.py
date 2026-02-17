@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from datetime import datetime, timedelta
 from models import db, Species, Product, Vendor, Category, Grade, Format
 import os
 import traceback
@@ -18,6 +19,22 @@ with app.app_context():
     db.create_all()
 
 """ HOMEPAGE START """
+
+def staleness_cell(last_updated):
+    """Return an HTML table cell with colour-coded last updated date."""
+    if not last_updated:
+        return '<td style="color:#999; font-size:12px;">-</td>'
+    now = datetime.utcnow()
+    age_months = (now - last_updated).days / 30.4
+    date_str = last_updated.strftime("%Y-%m-%d")
+    if age_months <= 3:
+        return f'<td><span class="stale-fresh">{date_str}</span></td>'
+    elif age_months <= 6:
+        return f'<td><span class="stale-warn">&#9888; {date_str}</span></td>'
+    else:
+        return f'<td><span class="stale-old">&#9888; {date_str}</span></td>'
+
+
 """return "<h1>Hello! Flask is working!</h1><p>If you see this, the server works.</p>" """
 @app.route('/')
 def index():
@@ -77,7 +94,7 @@ def index():
         def sort_url(column):
             if sort_by == column:
                 new_order = 'desc' if sort_order == 'asc' else 'asc'
-                arrow = ' ▲' if sort_order == 'asc' else ' ▼'
+                arrow = ' â–²' if sort_order == 'asc' else ' â–¼'
             else:
                 new_order = 'asc'
                 arrow = ''
@@ -96,9 +113,9 @@ def index():
             
             # Previous button
             if page > 1:
-                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page-1}" class="page-btn">← Previous</a>'
+                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page-1}" class="page-btn">â† Previous</a>'
             else:
-                html += '<span class="page-btn disabled">← Previous</span>'
+                html += '<span class="page-btn disabled">â† Previous</span>'
             
             # Page numbers
             # Show: First page, pages around current, last page
@@ -134,9 +151,9 @@ def index():
             
             # Next button
             if page < total_pages:
-                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page+1}" class="page-btn">Next →</a>'
+                html += f'<a href="/?sort={sort_by}&order={sort_order}&page={page+1}" class="page-btn">Next â†’</a>'
             else:
-                html += '<span class="page-btn disabled">Next →</span>'
+                html += '<span class="page-btn disabled">Next â†’</span>'
             
             html += '</div>'
             return html
@@ -208,6 +225,10 @@ def index():
                     padding: 8px 4px; 
                     color: #666; 
                 }
+                /* Staleness indicator styles */
+                .stale-fresh  { color: #2e7d32; font-size: 12px; }
+                .stale-warn   { color: #e65100; font-size: 12px; }
+                .stale-old    { color: #c62828; font-size: 12px; font-weight: bold; }
                 .showing-info {
                     text-align: center;
                     color: #666;
@@ -230,14 +251,14 @@ def index():
             </style>
         </head>
         <body>
-            <h1>🎸 Tonewood Price Comparison</h1>
+            <h1>ðŸŽ¸ Tonewood Price Comparison</h1>
             
             <div class="stats">
                 <strong>Database:</strong> """ + str(total_count) + """ products from """ + str(len(vendors)) + """ vendors
             </div>
             
             <div class="filters">
-                <h3>Search Products <button type="button" class="collapse-btn" onclick="toggleFilters()">▼ Hide Filters</button></h3>
+                <h3>Search Products <button type="button" class="collapse-btn" onclick="toggleFilters()">â–¼ Hide Filters</button></h3>
                 <form action="/search" method="get">
                     <label>Species:</label>
                     <select name="species_id">
@@ -283,7 +304,7 @@ def index():
                     <label>Max Price:</label>
                     <input type="number" name="max_price" placeholder="e.g., 500"><br>
                     
-                    <button type="submit">🔍 Search</button>
+                    <button type="submit">ðŸ” Search</button>
                 </form>
             </div>
             
@@ -309,10 +330,10 @@ def index():
                     const btn = document.querySelector('.collapse-btn');
                     if (form.style.display === 'none') {
                         form.style.display = 'block';
-                        btn.textContent = '▼ Hide Filters';
+                        btn.textContent = 'â–¼ Hide Filters';
                     } else {
                         form.style.display = 'none';
-                        btn.textContent = '▶ Show Filters';
+                        btn.textContent = 'â–¶ Show Filters';
                     }
                 }
                 
@@ -354,7 +375,7 @@ def index():
         
         html += f"""
             <div class="sort-info">
-                💡 <strong>Tip:</strong> Click any column header to sort by that column
+                ðŸ’¡ <strong>Tip:</strong> Click any column header to sort by that column
             </div>
 
             <div class="showing-info">
@@ -369,6 +390,7 @@ def index():
                     <th><a href='""" + format_url + """'>Format""" + format_arrow + """</a></th>
                     <th><a href='""" + grade_url + """'>Grade""" + grade_arrow + """</a></th>
                     <th><a href='""" + price_url + """'>Price""" + price_arrow + """</a></th>
+                    <th>Updated</th>
                     <th>Link</th>
                 </tr>
         """
@@ -386,7 +408,8 @@ def index():
                     <td>{format_name}</td>
                     <td>{grade}</td>
                     <td><strong>{p.price:.2f} SEK</strong></td>
-                    <td><a href="{p.product_url}" target="_blank">View →</a></td>
+                    """ + staleness_cell(p.last_updated) + f"""
+                    <td><a href="{p.product_url}" target="_blank">View â†’</a></td>
                 </tr>
             """
         
@@ -456,7 +479,7 @@ def search():
     def sort_url(column):
         if sort_by == column:
             new_order = 'desc' if sort_order == 'asc' else 'asc'
-            arrow = ' ▲' if sort_order == 'asc' else ' ▼'
+            arrow = ' â–²' if sort_order == 'asc' else ' â–¼'
         else:
             new_order = 'asc'
             arrow = ''
@@ -531,22 +554,22 @@ def search():
         </style>
     </head>
     <body>
-        <div class="back"><a href="/">← Back to All Products</a></div>
-        <h1>🔍 Search Results</h1>
+        <div class="back"><a href="/">â† Back to All Products</a></div>
+        <h1>ðŸ” Search Results</h1>
         
         <div class="filters-applied">
             <strong>Filters:</strong> {filter_text}
         </div>
         
         <div class="sort-info">
-            💡 <strong>Tip:</strong> Click any column header to sort results
+            ðŸ’¡ <strong>Tip:</strong> Click any column header to sort results
         </div>
     """
     
     if len(products) == 0:
         html += """
         <div class="no-results">
-            <h2>😕 No products found</h2>
+            <h2>ðŸ˜• No products found</h2>
             <p>Try adjusting your filters or <a href="/">view all products</a></p>
         </div>
         """
@@ -561,6 +584,7 @@ def search():
                 <th><a href='""" + format_url + """'>Format""" + format_arrow + """</a></th>
                 <th><a href='{grade_url}'>Grade{grade_arrow}</a></th>
                 <th><a href='{price_url}'>Price{price_arrow}</a></th>
+                <th>Updated</th>
                 <th>Link</th>
             </tr>
         """
@@ -578,7 +602,8 @@ def search():
                     <td>{format_name}</td>
                     <td>{grade}</td>
                     <td><strong>{p.price:.2f} {p.currency}</strong></td>
-                    <td><a href="{p.product_url}" target="_blank">View →</a></td>
+                    """ + staleness_cell(p.last_updated) + f"""
+                    <td><a href="{p.product_url}" target="_blank">View â†’</a></td>
                 </tr>
             """
         
@@ -596,7 +621,7 @@ def search():
 
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("🎸 Tonewood Price Comparison is starting...")
+    print("ðŸŽ¸ Tonewood Price Comparison is starting...")
     print("Open your browser and go to: http://localhost:5000")
     print("Press CTRL+C to stop the server")
     print("="*50 + "\n")

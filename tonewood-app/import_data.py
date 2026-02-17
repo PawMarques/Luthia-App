@@ -458,6 +458,17 @@ def import_vendor_products(file_path, sheet_name):
 
         weight_kg = safe_float(row['Weight (kg)'])
 
+        # Read Last Updated from Excel, fall back to now if missing or unparseable
+        last_updated = None
+        if 'Last Updated' in df.columns and pd.notna(row['Last Updated']):
+            try:
+                last_updated = pd.to_datetime(row['Last Updated']).to_pydatetime()
+            except Exception:
+                pass
+        if last_updated is None:
+            from datetime import datetime
+            last_updated = datetime.utcnow()
+
         product = Product(
             species_id=species.species_id,
             vendor_id=vendor.vendor_id,
@@ -472,7 +483,8 @@ def import_vendor_products(file_path, sheet_name):
             price=price,
             currency='SEK' if 'sek' in price_col.lower() else 'EUR',
             in_stock=str(row['In Stock']).lower() == 'yes' if pd.notna(row['In Stock']) else True,
-            product_url=str(row['Product URL']) if pd.notna(row['Product URL']) else None
+            product_url=str(row['Product URL']) if pd.notna(row['Product URL']) else None,
+            last_updated=last_updated
         )
         db.session.add(product)
         count += 1
