@@ -32,7 +32,7 @@ class Species(db.Model):
 class SpeciesAlias(db.Model):
     """
     All known alternate names for a species, used during import to resolve
-    vendor-listed names (e.g. 'Ask', 'Hard Maple', 'Lönn') to the canonical
+    vendor-listed names (e.g. 'Ask', 'Hard Maple', 'LÃ¶nn') to the canonical
     Species record.  Also serves as a searchable name index in the web UI.
     """
     __tablename__ = 'species_aliases'
@@ -97,6 +97,21 @@ class Unit(db.Model):
     
     products = db.relationship('Product', back_populates='unit')
 
+class ProductImage(db.Model):
+    __tablename__ = 'product_images'
+
+    image_id    = db.Column(db.Integer, primary_key=True)
+    product_id  = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=False)
+    source_type = db.Column(db.String(10), nullable=False, default='upload')  # 'upload' | 'url'
+    filename    = db.Column(db.String(200))   # set for uploads
+    url         = db.Column(db.String(500))   # set for external URLs
+    caption     = db.Column(db.String(200))
+    sort_order  = db.Column(db.Integer, default=0)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    product = db.relationship('Product', back_populates='images')
+
+
 class Product(db.Model):
     __tablename__ = 'products'
     
@@ -126,3 +141,5 @@ class Product(db.Model):
     grade = db.relationship('Grade', back_populates='products')
     format = db.relationship('Format', back_populates='products')
     unit = db.relationship('Unit', back_populates='products')
+    images = db.relationship('ProductImage', back_populates='product',
+                             cascade='all, delete-orphan', order_by='ProductImage.sort_order')

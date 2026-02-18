@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from datetime import datetime, timedelta
-from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format
+from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format, ProductImage
 import os
+import uuid
 import traceback
 
 app = Flask(__name__)
@@ -13,6 +14,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
 db.init_app(app)
+
+# Upload folder for product images
+UPLOAD_FOLDER = os.path.join(basedir, 'static', 'product-images')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Create tables if they don't exist
 with app.app_context():
@@ -31,10 +40,10 @@ CATEGORY_STYLES = {
 }
 
 VENDOR_FLAGS = {
-    'Sweden':   'ðŸ‡¸ðŸ‡ª',
-    'Portugal': 'ðŸ‡µðŸ‡¹',
-    'Italy':    'ðŸ‡®ðŸ‡¹',
-    'Spain':    'ðŸ‡ªðŸ‡¸',
+    'Sweden':   '🇸🇪',
+    'Portugal': '🇵🇹',
+    'Italy':    '🇮🇹',
+    'Spain':    '🇪🇸',
 }
 
 def category_badge(name):
@@ -46,7 +55,7 @@ def category_badge(name):
 def staleness_cell(last_updated):
     """Return an HTML table cell with colour-coded last updated date."""
     if not last_updated:
-        return '<td style="font-size:11px;color:#3f3f46;padding:11px 16px;">â€”</td>'
+        return '<td style="font-size:11px;color:#3f3f46;padding:11px 16px;">—</td>'
     now = datetime.utcnow()
     age_months = (now - last_updated).days / 30.4
     date_str = last_updated.strftime("%Y-%m-%d")
@@ -60,7 +69,7 @@ def staleness_cell(last_updated):
 
 @app.route('/')
 def index():
-    """Home page â€” dropdown population only; products loaded live via /api/products"""
+    """Home page — dropdown population only; products loaded live via /api/products"""
     try:
         from sqlalchemy import func
 
@@ -96,7 +105,7 @@ def index():
         vendor_opts = '<option value="">All vendors</option>\n'
         for v, cnt in vendors:
             flag = VENDOR_FLAGS.get(v.country, '')
-            vendor_opts += f'<option value="{v.vendor_id}">{v.name} Â· {v.country} {flag} ({cnt})</option>\n'
+            vendor_opts += f'<option value="{v.vendor_id}">{v.name} · {v.country} {flag} ({cnt})</option>\n'
 
         cat_opts = '<option value="">All categories</option>\n'
         for c, cnt in categories:
@@ -115,14 +124,14 @@ def index():
 <div class="header">
   <div class="header-top">
     <div class="header-left">
-      <span>ðŸŽ¸</span>
+      <span>🎸</span>
       <div>
         <div class="header-title">Tonewood Finder</div>
-        <div class="header-sub">{len(vendors)} vendors Â· {total_products} products</div>
+        <div class="header-sub">{len(vendors)} vendors · {total_products} products</div>
       </div>
     </div>
     <button class="toggle-btn" onclick="toggleFilters()">
-      <span id="toggle-label">Hide filters</span> <span id="toggle-arrow">â†‘</span>
+      <span id="toggle-label">Hide filters</span> <span id="toggle-arrow">↑</span>
     </button>
   </div>
 
@@ -164,7 +173,7 @@ def index():
 <div class="main">
 
   <div class="results-bar">
-    <span id="results-text">Loadingâ€¦</span>
+    <span id="results-text">Loading…</span>
     <div class="pager" id="pager-top"></div>
   </div>
 
@@ -319,31 +328,7 @@ def api_product_detail(product_id):
         if a.alias_name not in aliases[lang]:
             aliases[lang].append(a.alias_name)
 
-    # Sibling listings (same species, different product)
-    siblings = []
-    for op in (Product.query
-               .filter_by(species_id=sp.species_id)
-               .filter(Product.product_id != p.product_id)
-               .order_by(Product.price)
-               .all()):
-        cat = op.category.name
-        s = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
-        sd, sc = stale_info(op.last_updated)
-        siblings.append({
-            'product_id':  op.product_id,
-            'vendor':      op.vendor.name,
-            'vendor_flag': VENDOR_FLAGS.get(op.vendor.country, ''),
-            'category':    cat,
-            'cat_bg': s['bg'], 'cat_text': s['text'], 'cat_border': s['border'],
-            'format':      op.format.name if op.format else '',
-            'grade':       op.grade.name  if op.grade  else '',
-            'price':       round(op.price, 2),
-            'url':         op.product_url or '',
-            'dimensions':  _fmt_dims(op),
-            'stale_date':  sd,
-            'stale_color': sc,
-            'in_stock':    op.in_stock,
-        })
+    # Sibling listings removed
 
     cat = p.category.name
     cs  = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
@@ -384,8 +369,160 @@ def api_product_detail(product_id):
         'origin':              sp.origin or '',
         'cites_listed':        sp.cites_listed or False,
         'aliases':             aliases,
-        'siblings':            siblings,
+        'images':              [_fmt_image(img) for img in p.images],
     })
+
+
+@app.route('/api/products/<int:product_id>', methods=['PUT'])
+def api_product_edit(product_id):
+    """Save edits to a single product."""
+    p = Product.query.get_or_404(product_id)
+    data = request.get_json(force=True)
+
+    errors = []
+
+    # --- Price ---
+    if 'price' in data:
+        try:
+            val = float(data['price'])
+            if val < 0:
+                raise ValueError
+            p.price = round(val, 2)
+        except (ValueError, TypeError):
+            errors.append('Price must be a positive number.')
+
+    # --- Stock ---
+    if 'in_stock' in data:
+        p.in_stock = bool(data['in_stock'])
+
+    # --- Numeric dimensions ---
+    for field in ('thickness_mm', 'width_mm', 'length_mm', 'weight_kg'):
+        if field in data:
+            raw = data[field]
+            if raw == '' or raw is None:
+                setattr(p, field, None)
+            else:
+                try:
+                    setattr(p, field, float(raw))
+                except (ValueError, TypeError):
+                    errors.append(f'{field} must be a number.')
+
+    # --- Free-text / lookup fields ---
+    if 'product_url' in data:
+        p.product_url = data['product_url'].strip() or None
+
+    if 'format' in data:
+        name = data['format'].strip()
+        if name:
+            fmt = Format.query.filter_by(name=name).first()
+            if not fmt:
+                fmt = Format(name=name)
+                db.session.add(fmt)
+                db.session.flush()
+            p.format_id = fmt.format_id
+        else:
+            p.format_id = None
+
+    if 'grade' in data:
+        from models import Grade
+        name = data['grade'].strip()
+        if name:
+            grade = Grade.query.filter_by(name=name).first()
+            if not grade:
+                grade = Grade(name=name)
+                db.session.add(grade)
+                db.session.flush()
+            p.grade_id = grade.grade_id
+        else:
+            p.grade_id = None
+
+    if errors:
+        return jsonify({'ok': False, 'errors': errors}), 400
+
+    p.last_updated = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+def _fmt_image(img):
+    """Serialise a ProductImage to a dict for the API."""
+    if img.source_type == 'upload':
+        src = f'/static/product-images/{img.filename}'
+    else:
+        src = img.url or ''
+    return {
+        'image_id':    img.image_id,
+        'source_type': img.source_type,
+        'src':         src,
+        'caption':     img.caption or '',
+        'sort_order':  img.sort_order,
+    }
+
+
+@app.route('/api/products/<int:product_id>/images', methods=['POST'])
+def api_image_upload(product_id):
+    """Upload a file or save a URL as a product image."""
+    p = Product.query.get_or_404(product_id)
+
+    # --- URL image ---
+    if request.is_json:
+        data = request.get_json(force=True)
+        url  = (data.get('url') or '').strip()
+        if not url:
+            return jsonify({'ok': False, 'error': 'No URL provided.'}), 400
+        caption = (data.get('caption') or '').strip()
+        max_order = db.session.query(db.func.max(ProductImage.sort_order))\
+                              .filter_by(product_id=product_id).scalar() or 0
+        img = ProductImage(product_id=product_id, source_type='url',
+                           url=url, caption=caption, sort_order=max_order + 1)
+        db.session.add(img)
+        db.session.commit()
+        return jsonify({'ok': True, 'image': _fmt_image(img)})
+
+    # --- File upload ---
+    if 'file' not in request.files:
+        return jsonify({'ok': False, 'error': 'No file provided.'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'ok': False, 'error': 'Empty filename.'}), 400
+    if not allowed_file(f.filename):
+        return jsonify({'ok': False, 'error': 'File type not allowed. Use JPG, PNG, WebP or GIF.'}), 400
+
+    ext      = f.filename.rsplit('.', 1)[1].lower()
+    filename = f'{product_id}_{uuid.uuid4().hex}.{ext}'
+    f.save(os.path.join(UPLOAD_FOLDER, filename))
+
+    caption   = (request.form.get('caption') or '').strip()
+    max_order = db.session.query(db.func.max(ProductImage.sort_order))\
+                          .filter_by(product_id=product_id).scalar() or 0
+    img = ProductImage(product_id=product_id, source_type='upload',
+                       filename=filename, caption=caption, sort_order=max_order + 1)
+    db.session.add(img)
+    db.session.commit()
+    return jsonify({'ok': True, 'image': _fmt_image(img)})
+
+
+@app.route('/api/images/<int:image_id>', methods=['DELETE'])
+def api_image_delete(image_id):
+    """Delete a product image (file + DB record)."""
+    img = ProductImage.query.get_or_404(image_id)
+    if img.source_type == 'upload' and img.filename:
+        path = os.path.join(UPLOAD_FOLDER, img.filename)
+        if os.path.exists(path):
+            os.remove(path)
+    db.session.delete(img)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/images/<int:image_id>/caption', methods=['PATCH'])
+def api_image_caption(image_id):
+    """Update the caption of an image."""
+    img = ProductImage.query.get_or_404(image_id)
+    data = request.get_json(force=True)
+    img.caption = (data.get('caption') or '').strip()
+    db.session.commit()
+    return jsonify({'ok': True})
 
 
 def _fmt_dims(p):
