@@ -122,7 +122,7 @@ def index():
 <body>
 
 <div class="header">
-  <div class="header-top">
+  <div class="header-bar">
     <div class="header-left">
       <span>🎸</span>
       <div>
@@ -130,13 +130,8 @@ def index():
         <div class="header-sub">{len(vendors)} vendors · {total_products} products</div>
       </div>
     </div>
-    <button class="toggle-btn" onclick="toggleFilters()">
-      <span id="toggle-label">Hide filters</span> <span id="toggle-arrow">↑</span>
-    </button>
-  </div>
 
-  <div class="filter-panel" id="filter-panel">
-    <div class="filter-grid">
+    <div class="header-filters">
       <div class="filter-group">
         <label class="filter-label">Species</label>
         <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
@@ -166,7 +161,10 @@ def index():
         <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
       </div>
     </div>
-    <div class="chips-row" id="chips-row"></div>
+
+    <div class="header-right">
+      <div class="chips-row" id="chips-row"></div>
+    </div>
   </div>
 </div>
 

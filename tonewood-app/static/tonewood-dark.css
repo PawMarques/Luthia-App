@@ -6,33 +6,28 @@ body {
 .header {
   background: #18181b; border-bottom: 1px solid #27272a;
   position: sticky; top: 0; z-index: 10;
-  display: flex; flex-direction: column;
 }
-.header-top {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px;
+.header-bar {
+  display: flex; align-items: center; gap: 20px;
+  padding: 10px 24px; max-width: 1400px; margin: 0 auto;
 }
-.header-left { display: flex; align-items: center; gap: 12px; font-size:22px; }
+.header-left {
+  display: flex; align-items: center; gap: 12px; font-size: 22px;
+  flex-shrink: 0;
+}
 .header-title { font-size: 15px; font-weight: 600; color: #f4f4f5; }
 .header-sub   { font-size: 12px; color: #52525b; margin-top: 2px; }
-.toggle-btn {
-  font-size: 13px; color: #71717a; background: #1c1c1e;
-  border: 1px solid #2e2e32; border-radius: 6px; padding: 6px 12px; cursor: pointer;
+
+.header-filters {
+  display: flex; align-items: flex-end; gap: 10px; flex: 1; justify-content: center;
 }
-.toggle-btn:hover { color: #f4f4f5; border-color: #52525b; }
-.main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
-.filter-panel { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 18px 20px; }
-.header .filter-panel {
-  border: none; border-bottom: 0px solid #27272a; border-radius: 0;
-  padding: 14px 24px 18px; background: transparent;
+.header-filters .filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 120px; max-width: 180px; }
+.header-filters .filter-select,
+.header-filters .filter-input  { height: 32px; font-size: 12px; }
+
+.header-right {
+  flex-shrink: 0; min-width: 120px; display: flex; align-items: center; justify-content: flex-end;
 }
-.header .filter-grid {
-  grid-template-columns: repeat(5, minmax(140px, 200px));
-  justify-content: center;
-}
-.header .chips-row { justify-content: center; margin-top: 10px; }
-.filter-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; align-items: end; }
-.filter-group { display: flex; flex-direction: column; gap: 6px; }
 .filter-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.07em; }
 .filter-select, .filter-input {
   height: 36px; background: #1c1c1e; border: 1px solid #2e2e32; border-radius: 6px;
@@ -140,11 +135,15 @@ tr.detail-expand-row td.detail-expand-cell {
 .detail-wrap { display: flex; flex-direction: column; gap: 0; }
 
 .detail-topbar {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px; margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 0;
+  padding: 0 0 14px 0;
 }
-.detail-topbar-left { flex: 1; min-width: 0; }
-.detail-topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+.detail-topbar-left  { min-width: 0; }
+.detail-topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
 .detail-species-h { font-size: 18px; font-weight: 700; color: #f4f4f5; line-height: 1.2; }
 .detail-sci-h     { font-size: 12px; color: #52525b; font-style: italic; margin-top: 3px; }
@@ -155,17 +154,32 @@ tr.detail-expand-row td.detail-expand-cell {
   border: 1px solid; border-radius: 20px; padding: 2px 9px; white-space: nowrap;
 }
 
-.detail-price-hero { display: flex; align-items: baseline; gap: 4px; }
-.detail-price-num  { font-size: 28px; font-weight: 700; color: #f4f4f5; font-variant-numeric: tabular-nums; }
-.detail-price-cur  { font-size: 14px; color: #71717a; }
+/* 4: Slightly larger price to balance right side */
+.detail-price-hero { display: flex; align-items: baseline; gap: 5px; }
+.detail-price-num  { font-size: 36px; font-weight: 700; color: #f4f4f5; font-variant-numeric: tabular-nums; }
+.detail-price-cur  { font-size: 16px; color: #71717a; }
 .detail-price-unit { font-size: 12px; color: #52525b; }
+
+/* 3: Vendor line aligns with badges row (bottom of topbar) */
+.detail-vendor-line { display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+.detail-vendor-name    { font-size: 13px; font-weight: 600; color: #d4d4d8; }
+.detail-vendor-flag    { font-size: 14px; }
+.detail-vendor-country { font-size: 12px; color: #52525b; }
 
 
 /* ---- Three-column data grid ---- */
 .detail-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 16px 1fr;
+  gap: 0;
   border: 1px solid #27272a; border-radius: 8px; overflow: hidden;
-  margin-bottom: 20px;
+  margin-top: 14px; margin-bottom: 0;
+}
+
+/* 5: Gap column between left+middle and right */
+.detail-col-gap {
+  background: #0d0d0f;
+  border-right: 1px solid #27272a;
 }
 
 .detail-col {
@@ -173,9 +187,26 @@ tr.detail-expand-row td.detail-expand-cell {
 }
 .detail-col:last-child { border-right: none; }
 
+/* Editable columns */
+.detail-col-editable { background: #18181b; }
+.edit-grid .detail-col-editable { background: #0f1929; }
+
+/* Read-only column — darker background */
+.detail-col-readonly {
+  background: #111113;
+}
+
+/* Images column */
+.detail-col-images { padding: 16px 14px; }
+
 .detail-col-hd {
   font-size: 10px; font-weight: 700; color: #52525b; text-transform: uppercase;
   letter-spacing: 0.09em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.edit-col-tag {
+  font-size: 9px; font-weight: 500; color: #3b82f6; background: #1e3a5f;
+  border: 1px solid #1d4ed8; border-radius: 4px; padding: 1px 5px;
+  text-transform: uppercase; letter-spacing: 0.05em;
 }
 
 /* ---- Data fields ---- */
@@ -196,8 +227,8 @@ tr.detail-expand-row td.detail-expand-cell {
 }
 .edit-btn:hover:not(:disabled) { color: #f4f4f5; border-color: #3b82f6; background: #1e293b; }
 
-/* Edit grid — same layout as view grid but blue left border */
-.edit-grid { border-left: 2px solid #3b82f6 !important; }
+/* Edit grid — editable columns get blue tint (handled by .detail-col-editable) */
+.edit-grid { }
 
 /* Inputs */
 .edit-input {
@@ -235,12 +266,11 @@ tr.detail-expand-row td.detail-expand-cell {
   margin: 8px 0 0; line-height: 1.4;
 }
 
-/* Save / Cancel action bar */
+/* Save / Cancel action bar — Edit btn on left, Cancel+Save on right */
 .edit-action-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 18px; background: #0f172a;
-  border-top: 1px solid #1e3a5f; border-radius: 0 0 8px 8px;
-  gap: 12px;
+  display: flex; align-items: center; justify-content: flex-start;
+  padding: 12px 4px 0; background: transparent;
+  gap: 8px; margin-top: 14px;
 }
 .edit-action-btns { display: flex; gap: 8px; flex-shrink: 0; }
 .edit-error { font-size: 12px; color: #f87171; flex: 1; }
@@ -262,19 +292,13 @@ tr.detail-expand-row td.detail-expand-cell {
 
 /* ===================== IMAGES ===================== */
 
-.img-section {
-  border-bottom: 1px solid #27272a;
-  padding: 14px 20px;
-}
-.img-section-inner { display: flex; flex-direction: column; gap: 10px; }
-
-/* Thumbnail row */
+/* Thumbnail row — 3 per row using grid */
 .img-thumbs-row {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; min-height: 32px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: start;
 }
 
 .img-thumb-wrap {
-  position: relative; width: 140px; flex-shrink: 0;
+  position: relative; width: 100%; flex-shrink: 0;
   border-radius: 6px; overflow: hidden;
   border: 1px solid #27272a; background: #111113;
   cursor: pointer; transition: border-color 0.15s;
@@ -288,7 +312,7 @@ tr.detail-expand-row td.detail-expand-cell {
 }
 
 .img-thumb {
-  width: 140px; height: 100px;
+  width: 100%; aspect-ratio: 4/3;
   object-fit: cover; object-position: center;
   display: block;
 }
@@ -311,7 +335,7 @@ tr.detail-expand-row td.detail-expand-cell {
 
 /* Upload area */
 .img-upload-area {
-  width: 140px; height: 100px; flex-shrink: 0;
+  width: 100%; aspect-ratio: 4/3; flex-shrink: 0;
   border: 1.5px dashed #3f3f46; border-radius: 6px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px; cursor: pointer; transition: border-color 0.15s, background 0.15s;

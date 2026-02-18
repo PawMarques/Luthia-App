@@ -211,15 +211,23 @@ function buildDetailHtml(d) {
         <a href="${esc(d.url)}" target="_blank" class="view-link">View on vendor site &#8599;</a></div>`
     : dField('Product URL', null);
 
+  // 7: Vendor line for top bar (flag + name + country)
+  const vendorLine = `<div class="detail-vendor-line">
+    <span class="detail-vendor-name">${esc(d.vendor)}</span>
+    <span class="detail-vendor-flag">${d.vendor_flag}</span>
+    <span class="detail-vendor-country">${esc(d.vendor_country)}</span>
+  </div>`;
+
   return `
 <div class="detail-wrap" data-product-id="${d.product_id}">
-  <!-- Top bar -->
+
+  <!-- Top bar: 2-column, species left, price+vendor right, aligned to baseline -->
   <div class="detail-topbar">
     <div class="detail-topbar-left">
       <div class="detail-species-h">${esc(d.commercial_name || d.scientific_name)}</div>
       <div class="detail-sci-h">${esc(d.scientific_name)}</div>
       <div class="detail-badges-row">
-        ${stockBadge} ${citesBadge} ${catBadge} ${updHtml}
+        ${stockBadge} ${catBadge} ${updHtml}
       </div>
     </div>
     <div class="detail-topbar-right">
@@ -228,18 +236,13 @@ function buildDetailHtml(d) {
         <span class="detail-price-cur">SEK</span>
         ${d.unit ? `<span class="detail-price-unit">/ ${esc(d.unit)}</span>` : ''}
       </div>
-      <button class="edit-btn" onclick="enterEditMode(${d.product_id})">&#9998; Edit</button>
+      ${vendorLine}
     </div>
   </div>
 
-  <!-- Images section -->
-  <div class="img-section" id="img-section-${d.product_id}">
-    ${buildImagesHtml(d.images, d.product_id, false)}
-  </div>
-
-  <!-- View mode grid -->
+  <!-- View mode grid: Product | Images | gap | Species+Names -->
   <div class="detail-grid" id="view-grid-${d.product_id}">
-    <div class="detail-col">
+    <div class="detail-col detail-col-editable">
       <div class="detail-col-hd">Product</div>
       ${dField('Format',     d.format)}
       ${dField('Grade',      d.grade)}
@@ -252,29 +255,27 @@ function buildDetailHtml(d) {
       ${dField('Listed as',  d.species_as_listed)}
       ${productUrlHtml}
     </div>
-    <div class="detail-col">
-      <div class="detail-col-hd">Vendor</div>
-      ${dField('Name',     d.vendor + ' ' + d.vendor_flag)}
-      ${dField('Country',  d.vendor_country)}
-      ${dField('Currency', d.vendor_currency)}
-      ${vendorWebHtml}
-      <div class="detail-col-hd" style="margin-top:18px;">Species</div>
-      ${dField('Scientific',      d.scientific_name)}
-      ${dField('Commercial',      d.commercial_name)}
-      ${dField('Alt. commercial', d.alt_commercial_name)}
-      ${dField('Origin',          d.origin)}
-      <div class="df"><span class="df-lbl">CITES</span>${citesBadge}</div>
+    <div class="detail-col detail-col-images detail-col-editable" id="img-section-${d.product_id}">
+      <div class="detail-col-hd">Images</div>
+      ${buildImagesHtml(d.images, d.product_id, false)}
     </div>
-    <div class="detail-col">
-      <div class="detail-col-hd">Known Names</div>
+    <div class="detail-col detail-col-gap"></div>
+    <div class="detail-col detail-col-readonly">
+      <div class="detail-col-hd">Species</div>
+      ${dField('Scientific', d.scientific_name)}
+      ${dField('Commercial', d.commercial_name)}
+      ${dField('Origin',     d.origin)}
+      <div class="df"><span class="df-lbl">CITES</span>${citesBadge}</div>
+      <div class="detail-col-hd" style="margin-top:18px;">Known Names</div>
+      ${d.alt_commercial_name ? dField('Alt. commercial', d.alt_commercial_name) : ''}
       ${aliasRows}
     </div>
   </div>
 
-  <!-- Edit mode grid (hidden until Edit clicked) -->
+  <!-- Edit mode grid -->
   <div class="detail-grid edit-grid" id="edit-grid-${d.product_id}" style="display:none;">
-    <div class="detail-col">
-      <div class="detail-col-hd">Product <span style="color:#3b82f6;font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;">— editable</span></div>
+    <div class="detail-col detail-col-editable">
+      <div class="detail-col-hd">Product <span class="edit-col-tag">editable</span></div>
       ${eField('Price (SEK)', 'edit-price',     d.price,        'number')}
       ${eField('Format',      'edit-format',    d.format,       'text')}
       ${eField('Grade',       'edit-grade',     d.grade,        'text')}
@@ -287,38 +288,35 @@ function buildDetailHtml(d) {
         <span class="df-lbl">In Stock</span>
         <label class="edit-toggle">
           <input type="checkbox" id="edit-instock" ${d.in_stock ? 'checked' : ''}>
-          <span class="edit-toggle-track">
-            <span class="edit-toggle-thumb"></span>
-          </span>
+          <span class="edit-toggle-track"><span class="edit-toggle-thumb"></span></span>
           <span class="edit-toggle-label" id="edit-instock-label">${d.in_stock ? 'Yes' : 'No'}</span>
         </label>
       </div>
     </div>
-    <div class="detail-col">
-      <div class="detail-col-hd">Vendor</div>
-      ${dField('Name',     d.vendor + ' ' + d.vendor_flag)}
-      ${dField('Country',  d.vendor_country)}
-      <p class="edit-note">Vendor details are managed via the import script.</p>
-      <div class="detail-col-hd" style="margin-top:18px;">Species</div>
-      ${dField('Scientific',  d.scientific_name)}
-      ${dField('Commercial',  d.commercial_name)}
-      ${dField('Origin',      d.origin)}
-      <p class="edit-note">Species data is managed via the species sheet.</p>
+    <div class="detail-col detail-col-images detail-col-editable">
+      <div class="detail-col-hd">Images <span class="edit-col-tag">editable</span></div>
     </div>
-    <div class="detail-col">
-      <div class="detail-col-hd">Known Names</div>
+    <div class="detail-col detail-col-gap"></div>
+    <div class="detail-col detail-col-readonly">
+      <div class="detail-col-hd">Species</div>
+      ${dField('Scientific', d.scientific_name)}
+      ${dField('Commercial', d.commercial_name)}
+      ${dField('Origin',     d.origin)}
+      <div class="df"><span class="df-lbl">CITES</span>${citesBadge}</div>
+      <div class="detail-col-hd" style="margin-top:18px;">Known Names</div>
+      ${d.alt_commercial_name ? dField('Alt. commercial', d.alt_commercial_name) : ''}
       ${aliasRows}
-      <p class="edit-note">Names are managed via the species sheet.</p>
     </div>
   </div>
 
-  <!-- Save / Cancel bar (hidden until Edit clicked) -->
-  <div class="edit-action-bar" id="edit-bar-${d.product_id}" style="display:none;">
-    <span class="edit-error" id="edit-error-${d.product_id}"></span>
-    <div class="edit-action-btns">
+  <!-- Action bar: Edit + Cancel + Save all left-aligned -->
+  <div class="edit-action-bar" id="edit-bar-${d.product_id}">
+    <button class="edit-btn" id="edit-btn-${d.product_id}" onclick="enterEditMode(${d.product_id})">&#9998; Edit</button>
+    <div class="edit-action-btns" id="edit-save-btns-${d.product_id}" style="display:none;">
       <button class="edit-cancel-btn" onclick="cancelEditMode(${d.product_id})">Cancel</button>
       <button class="edit-save-btn"   onclick="saveEdit(${d.product_id})">&#10003; Save changes</button>
     </div>
+    <span class="edit-error" id="edit-error-${d.product_id}"></span>
   </div>
 </div>`;
 }
@@ -359,23 +357,16 @@ function buildImagesHtml(images, productId, editMode) {
       <input type="file" id="img-file-input-${productId}" accept="image/*" style="display:none"
              onchange="handleImageFile(this,${productId})">
       <span class="img-upload-icon">&#128247;</span>
-      <span class="img-upload-hint">Click or drop image</span>
-    </div>
-    <div class="img-url-row">
-      <input class="edit-input edit-input-text" id="img-url-input-${productId}"
-             placeholder="…or paste an image URL" type="url"
-             onkeydown="if(event.key==='Enter')addImageUrl(${productId})">
-      <button class="img-url-btn" onclick="addImageUrl(${productId})">Add URL</button>
-    </div>
-    <div class="img-upload-error" id="img-upload-error-${productId}"></div>` : '';
+      <span class="img-upload-hint">Click or drop</span>
+    </div>` : '';
 
   const empty = (!images || images.length === 0) && !editMode
     ? `<span class="df-miss" style="font-size:12px;">No images</span>` : '';
 
   return `
     <div class="img-section-inner">
-      <div class="img-thumbs-row" id="img-thumbs-${productId}">${thumbs}${empty}</div>
-      ${uploadArea}
+      <div class="img-thumbs-row" id="img-thumbs-${productId}">${thumbs}${uploadArea}${empty}</div>
+      <div class="img-upload-error" id="img-upload-error-${productId}"></div>
     </div>`;
 }
 
@@ -383,8 +374,14 @@ function refreshImageSection(productId, editMode) {
   fetch('/api/products/' + productId)
     .then(r => r.json())
     .then(d => {
-      const el = document.getElementById('img-section-' + productId);
-      if (el) el.innerHTML = buildImagesHtml(d.images, productId, editMode);
+      const gridId  = editMode ? 'edit-grid-' : 'view-grid-';
+      const col = document.querySelector(`#${gridId}${productId} .detail-col-images`);
+      if (!col) return;
+      const hd = col.querySelector('.detail-col-hd');
+      while (col.children.length > 1) col.removeChild(col.lastChild);
+      const inner = document.createElement('div');
+      inner.innerHTML = buildImagesHtml(d.images, productId, editMode);
+      col.appendChild(inner);
     });
 }
 
@@ -488,39 +485,46 @@ document.addEventListener('keydown', e => {
 function enterEditMode(productId) {
   document.getElementById('view-grid-' + productId).style.display = 'none';
   document.getElementById('edit-grid-' + productId).style.display = '';
-  document.getElementById('edit-bar-'  + productId).style.display = '';
 
-  // Switch image section to edit mode
-  refreshImageSection(productId, true);
+  // Show Save/Cancel, disable Edit button
+  document.getElementById('edit-save-btns-' + productId).style.display = '';
+  const editBtn = document.getElementById('edit-btn-' + productId);
+  if (editBtn) { editBtn.disabled = true; editBtn.style.opacity = '0.35'; }
+
+  // Populate the images column in the edit grid
+  const editImgCol = document.querySelector(`#edit-grid-${productId} .detail-col-images`);
+  if (editImgCol) {
+    fetch('/api/products/' + productId)
+      .then(r => r.json())
+      .then(d => {
+        const inner = document.createElement('div');
+        inner.innerHTML = buildImagesHtml(d.images, productId, true);
+        while (editImgCol.children.length > 1) editImgCol.removeChild(editImgCol.lastChild);
+        editImgCol.appendChild(inner);
+      });
+  }
 
   // Wire up the stock toggle label
   const cb = document.getElementById('edit-instock');
   const lbl = document.getElementById('edit-instock-label');
-  cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'Yes' : 'No'; });
+  if (cb) cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'Yes' : 'No'; });
 
-  // Swap edit button to disabled state
-  const btn = document.querySelector(`.detail-wrap[data-product-id="${productId}"] .edit-btn`);
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.35'; }
-
-  // Focus price field
   setTimeout(() => { const el = document.getElementById('edit-price'); if (el) el.focus(); }, 50);
 }
 
 function cancelEditMode(productId) {
   document.getElementById('view-grid-' + productId).style.display = '';
   document.getElementById('edit-grid-' + productId).style.display = 'none';
-  document.getElementById('edit-bar-'  + productId).style.display = 'none';
   document.getElementById('edit-error-'+ productId).textContent = '';
 
-  // Switch image section back to view mode
-  refreshImageSection(productId, false);
-
-  const btn = document.querySelector(`.detail-wrap[data-product-id="${productId}"] .edit-btn`);
-  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  // Hide Save/Cancel, re-enable Edit button
+  document.getElementById('edit-save-btns-' + productId).style.display = 'none';
+  const editBtn = document.getElementById('edit-btn-' + productId);
+  if (editBtn) { editBtn.disabled = false; editBtn.style.opacity = ''; }
 }
 
 function saveEdit(productId) {
-  const saveBtn = document.querySelector(`#edit-bar-${productId} .edit-save-btn`);
+  const saveBtn = document.querySelector(`#edit-save-btns-${productId} .edit-save-btn`);
   const errEl   = document.getElementById('edit-error-' + productId);
   errEl.textContent = '';
   saveBtn.disabled = true;
@@ -632,16 +636,6 @@ function showLoading() {
   document.getElementById('tbody').innerHTML = Array(8).fill(`<tr class="loading-row">
     ${Array(8).fill('<td><div class="shimmer"></div></td>').join('')}
   </tr>`).join('');
-}
-
-function toggleFilters() {
-  const panel = document.getElementById('filter-panel');
-  const label = document.getElementById('toggle-label');
-  const arrow = document.getElementById('toggle-arrow');
-  const hidden = panel.style.display === 'none';
-  panel.style.display = hidden ? 'block' : 'none';
-  label.textContent = hidden ? 'Hide filters' : 'Show filters';
-  arrow.textContent = hidden ? 'up' : 'down';
 }
 
 function fetchAndRender() {
