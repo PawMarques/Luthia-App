@@ -31,10 +31,10 @@ CATEGORY_STYLES = {
 }
 
 VENDOR_FLAGS = {
-    'Sweden':   '🇸🇪',
-    'Portugal': '🇵🇹',
-    'Italy':    '🇮🇹',
-    'Spain':    '🇪🇸',
+    'Sweden':   'ðŸ‡¸ðŸ‡ª',
+    'Portugal': 'ðŸ‡µðŸ‡¹',
+    'Italy':    'ðŸ‡®ðŸ‡¹',
+    'Spain':    'ðŸ‡ªðŸ‡¸',
 }
 
 def category_badge(name):
@@ -46,7 +46,7 @@ def category_badge(name):
 def staleness_cell(last_updated):
     """Return an HTML table cell with colour-coded last updated date."""
     if not last_updated:
-        return '<td style="font-size:11px;color:#3f3f46;padding:11px 16px;">—</td>'
+        return '<td style="font-size:11px;color:#3f3f46;padding:11px 16px;">â€”</td>'
     now = datetime.utcnow()
     age_months = (now - last_updated).days / 30.4
     date_str = last_updated.strftime("%Y-%m-%d")
@@ -60,7 +60,7 @@ def staleness_cell(last_updated):
 
 @app.route('/')
 def index():
-    """Home page — dropdown population only; products loaded live via /api/products"""
+    """Home page â€” dropdown population only; products loaded live via /api/products"""
     try:
         from sqlalchemy import func
 
@@ -96,7 +96,7 @@ def index():
         vendor_opts = '<option value="">All vendors</option>\n'
         for v, cnt in vendors:
             flag = VENDOR_FLAGS.get(v.country, '')
-            vendor_opts += f'<option value="{v.vendor_id}">{v.name} · {v.country} {flag} ({cnt})</option>\n'
+            vendor_opts += f'<option value="{v.vendor_id}">{v.name} Â· {v.country} {flag} ({cnt})</option>\n'
 
         cat_opts = '<option value="">All categories</option>\n'
         for c, cnt in categories:
@@ -113,19 +113,18 @@ def index():
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <span>🎸</span>
-    <div>
-      <div class="header-title">Tonewood Finder</div>
-      <div class="header-sub">{len(vendors)} vendors · {total_products} products</div>
+  <div class="header-top">
+    <div class="header-left">
+      <span>ðŸŽ¸</span>
+      <div>
+        <div class="header-title">Tonewood Finder</div>
+        <div class="header-sub">{len(vendors)} vendors Â· {total_products} products</div>
+      </div>
     </div>
+    <button class="toggle-btn" onclick="toggleFilters()">
+      <span id="toggle-label">Hide filters</span> <span id="toggle-arrow">â†‘</span>
+    </button>
   </div>
-  <button class="toggle-btn" onclick="toggleFilters()">
-    <span id="toggle-label">Hide filters</span> <span id="toggle-arrow">↑</span>
-  </button>
-</div>
-
-<div class="main">
 
   <div class="filter-panel" id="filter-panel">
     <div class="filter-grid">
@@ -158,12 +157,15 @@ def index():
         <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
       </div>
     </div>
+    <div class="chips-row" id="chips-row"></div>
   </div>
+</div>
 
-  <div class="chips-row" id="chips-row"></div>
+<div class="main">
 
   <div class="results-bar">
-    <span id="results-text">Loading…</span>
+    <span id="results-text">Loadingâ€¦</span>
+    <div class="pager" id="pager-top"></div>
   </div>
 
   <div class="table-wrap">
@@ -268,6 +270,7 @@ def api_products():
             stale_color = '#34d399' if age_months <= 3 else ('#f59e0b' if age_months <= 6 else '#f87171')
 
         rows.append({
+            'product_id':  p.product_id,
             'species':     display_name,
             'alias':       alias,
             'vendor':      p.vendor.name,
@@ -292,6 +295,106 @@ def api_products():
         'formats': formats,
     })
 """ API END """
+
+@app.route('/api/products/<int:product_id>')
+def api_product_detail(product_id):
+    """Full detail for a single product, plus species names and sibling listings."""
+    p = Product.query.get_or_404(product_id)
+    sp = p.species
+
+    def stale_info(dt):
+        if not dt:
+            return '', '#3f3f46'
+        age = (datetime.utcnow() - dt).days / 30.4
+        color = '#34d399' if age <= 3 else ('#f59e0b' if age <= 6 else '#f87171')
+        return dt.strftime('%Y-%m-%d'), color
+
+    stale_date, stale_color = stale_info(p.last_updated)
+
+    # All aliases grouped by language
+    aliases = {}
+    for a in sp.aliases:
+        lang = a.language or 'other'
+        aliases.setdefault(lang, [])
+        if a.alias_name not in aliases[lang]:
+            aliases[lang].append(a.alias_name)
+
+    # Sibling listings (same species, different product)
+    siblings = []
+    for op in (Product.query
+               .filter_by(species_id=sp.species_id)
+               .filter(Product.product_id != p.product_id)
+               .order_by(Product.price)
+               .all()):
+        cat = op.category.name
+        s = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
+        sd, sc = stale_info(op.last_updated)
+        siblings.append({
+            'product_id':  op.product_id,
+            'vendor':      op.vendor.name,
+            'vendor_flag': VENDOR_FLAGS.get(op.vendor.country, ''),
+            'category':    cat,
+            'cat_bg': s['bg'], 'cat_text': s['text'], 'cat_border': s['border'],
+            'format':      op.format.name if op.format else '',
+            'grade':       op.grade.name  if op.grade  else '',
+            'price':       round(op.price, 2),
+            'url':         op.product_url or '',
+            'dimensions':  _fmt_dims(op),
+            'stale_date':  sd,
+            'stale_color': sc,
+            'in_stock':    op.in_stock,
+        })
+
+    cat = p.category.name
+    cs  = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
+
+    return jsonify({
+        'product_id':          p.product_id,
+        'price':               round(p.price, 2),
+        'currency':            p.currency or 'SEK',
+        'in_stock':            p.in_stock,
+        'species_as_listed':   p.species_as_listed or '',
+        'thickness_mm':        p.thickness_mm,
+        'width_mm':            p.width_mm,
+        'length_mm':           p.length_mm,
+        'weight_kg':           p.weight_kg,
+        'url':                 p.product_url or '',
+        'stale_date':          stale_date,
+        'stale_color':         stale_color,
+        'dimensions':          _fmt_dims(p),
+        'category':            cat,
+        'cat_bg':  cs['bg'], 'cat_text': cs['text'], 'cat_border': cs['border'],
+        'format':              p.format.name if p.format else '',
+        'grade':               p.grade.name  if p.grade  else '',
+        'unit':                p.unit.name   if p.unit   else '',
+        'vendor':              p.vendor.name,
+        'vendor_flag':         VENDOR_FLAGS.get(p.vendor.country, ''),
+        'vendor_country':      p.vendor.country or '',
+        'vendor_website':      p.vendor.website or '',
+        'vendor_currency':     p.vendor.currency or '',
+        'scientific_name':     sp.scientific_name or '',
+        'commercial_name':     sp.commercial_name or '',
+        'alt_commercial_name': sp.alt_commercial_name or '',
+        'english_name':        sp.english_name or '',
+        'alt_english_name':    sp.alt_english_name or '',
+        'swedish_name':        sp.swedish_name or '',
+        'alt_swedish_name':    sp.alt_swedish_name or '',
+        'portuguese_name':     sp.portuguese_name or '',
+        'alt_portuguese_name': sp.alt_portuguese_name or '',
+        'origin':              sp.origin or '',
+        'cites_listed':        sp.cites_listed or False,
+        'aliases':             aliases,
+        'siblings':            siblings,
+    })
+
+
+def _fmt_dims(p):
+    parts = []
+    if p.thickness_mm: parts.append(f'{p.thickness_mm:g}')
+    if p.width_mm:     parts.append(f'{p.width_mm:g}')
+    if p.length_mm:    parts.append(f'{p.length_mm:g}')
+    return (' × '.join(parts) + ' mm') if parts else ''
+
 
 if __name__ == '__main__':
     print("\n" + "="*50)

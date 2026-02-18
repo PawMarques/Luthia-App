@@ -5,8 +5,12 @@ body {
 }
 .header {
   background: #18181b; border-bottom: 1px solid #27272a;
-  padding: 14px 24px; display: flex; align-items: center;
-  justify-content: space-between; position: sticky; top: 0; z-index: 10;
+  position: sticky; top: 0; z-index: 10;
+  display: flex; flex-direction: column;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
 }
 .header-left { display: flex; align-items: center; gap: 12px; font-size:22px; }
 .header-title { font-size: 15px; font-weight: 600; color: #f4f4f5; }
@@ -18,6 +22,15 @@ body {
 .toggle-btn:hover { color: #f4f4f5; border-color: #52525b; }
 .main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 .filter-panel { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 18px 20px; }
+.header .filter-panel {
+  border: none; border-bottom: 0px solid #27272a; border-radius: 0;
+  padding: 14px 24px 18px; background: transparent;
+}
+.header .filter-grid {
+  grid-template-columns: repeat(5, minmax(140px, 200px));
+  justify-content: center;
+}
+.header .chips-row { justify-content: center; margin-top: 10px; }
 .filter-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; align-items: end; }
 .filter-group { display: flex; flex-direction: column; gap: 6px; }
 .filter-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.07em; }
@@ -101,3 +114,100 @@ tbody td { padding: 11px 16px; vertical-align: middle; }
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .no-results { padding: 60px 16px; text-align: center; color: #52525b; }
+/* ===================== CLICKABLE ROWS ===================== */
+tbody tr.data-row { cursor: pointer; transition: background 0.1s; }
+tbody tr.data-row:hover { background: #1f1f23; }
+tbody tr.data-row.active-row { background: #1a2235 !important; box-shadow: inset 3px 0 0 #3b82f6; }
+
+/* ===================== INLINE DETAIL EXPANSION ===================== */
+tr.detail-expand-row td.detail-expand-cell {
+  padding: 0;
+  background: #111113;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.detail-expand-inner {
+  padding: 20px 24px 24px;
+  animation: expandIn 0.18s ease-out;
+}
+
+@keyframes expandIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Top bar ---- */
+.detail-wrap { display: flex; flex-direction: column; gap: 0; }
+
+.detail-topbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 20px;
+}
+.detail-topbar-left { flex: 1; min-width: 0; }
+.detail-topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+
+.detail-species-h { font-size: 18px; font-weight: 700; color: #f4f4f5; line-height: 1.2; }
+.detail-sci-h     { font-size: 12px; color: #52525b; font-style: italic; margin-top: 3px; }
+
+.detail-badges-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.d-badge {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 500;
+  border: 1px solid; border-radius: 20px; padding: 2px 9px; white-space: nowrap;
+}
+
+.detail-price-hero { display: flex; align-items: baseline; gap: 4px; }
+.detail-price-num  { font-size: 28px; font-weight: 700; color: #f4f4f5; font-variant-numeric: tabular-nums; }
+.detail-price-cur  { font-size: 14px; color: #71717a; }
+.detail-price-unit { font-size: 12px; color: #52525b; }
+
+.detail-close-btn {
+  font-size: 12px; color: #71717a; background: #1c1c1e;
+  border: 1px solid #2e2e32; border-radius: 6px; padding: 5px 12px;
+  cursor: pointer; transition: color 0.1s, border-color 0.1s; white-space: nowrap;
+}
+.detail-close-btn:hover { color: #f4f4f5; border-color: #52525b; }
+
+/* ---- Three-column data grid ---- */
+.detail-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+  border: 1px solid #27272a; border-radius: 8px; overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.detail-col {
+  padding: 16px 18px; border-right: 1px solid #27272a; background: #18181b;
+}
+.detail-col:last-child { border-right: none; }
+
+.detail-col-hd {
+  font-size: 10px; font-weight: 700; color: #52525b; text-transform: uppercase;
+  letter-spacing: 0.09em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+
+/* ---- Data fields ---- */
+.df { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; min-height: 22px; }
+.df-lbl  { font-size: 11px; color: #52525b; min-width: 110px; flex-shrink: 0; }
+.df-val  { font-size: 12px; color: #d4d4d8; word-break: break-word; }
+.df-miss { font-size: 11px; color: #3f3f46; font-style: italic; }
+
+/* ---- Siblings section ---- */
+.detail-siblings {
+  border: 1px solid #27272a; border-radius: 8px; overflow: hidden; background: #18181b;
+}
+.detail-siblings .detail-col-hd {
+  padding: 12px 16px 0; margin-bottom: 10px;
+}
+.sib-count {
+  font-size: 10px; font-weight: 400; color: #3f3f46; text-transform: none; letter-spacing: 0;
+}
+
+.sib-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sib-table thead th {
+  background: #1c1c1e; border-bottom: 1px solid #27272a; padding: 7px 10px;
+  text-align: left; font-size: 10px; font-weight: 600; color: #52525b;
+  text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
+}
+.sib-table tbody tr.sib-row { border-bottom: 1px solid #1f1f23; cursor: pointer; transition: background 0.1s; }
+.sib-table tbody tr.sib-row:last-child { border-bottom: none; }
+.sib-table tbody tr.sib-row:hover { background: #1c1c1e; }
+.sib-table tbody td { padding: 7px 10px; vertical-align: middle; color: #a1a1aa; }
