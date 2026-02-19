@@ -1,1 +1,0 @@
-SELECT product_id FROM products WHERE species_id = 46;
