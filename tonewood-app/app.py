@@ -611,8 +611,8 @@ def _candidate_products(role, variant):
         min_thickness = variant.neck_thickness_12f_mm
 
     elif role == 'fretboard':
-        # Fretboard length ≈ scale length + small overhang
-        min_length    = (variant.scale_mm or 864) + 20
+        # Fretboard length: fret 24 sits at scale × 0.75 from the nut; add 20mm overhang
+        min_length    = (variant.scale_mm or 864) * 0.75 + 20
         min_width     = (variant.nut_width_mm or 38) + 10
         min_thickness = 6.0   # standard fretboard blank minimum
 
@@ -671,6 +671,338 @@ def _check_thickness_warning(build):
 
 
 # ---------------------------------------------------------------------------
+# /templates  — browse instrument templates and their reference dimensions
+# ---------------------------------------------------------------------------
+@app.route('/templates')
+def templates_index():
+    templates = InstrumentTemplate.query.order_by(InstrumentTemplate.name).all()
+
+    cards_html = ''
+    for t in templates:
+        type_label = t.instrument_type.capitalize() if t.instrument_type else 'Instrument'
+
+        variants_html = ''
+        for v in sorted(t.variants, key=lambda x: (x.strings, x.scale_mm)):
+            construction_label = v.construction.replace('-', ' ').title() if v.construction else '—'
+            has_top_badge = ' <span class="badge-grade">+ Top</span>' if v.has_top else ''
+
+            dim_rows = ''
+            if v.body_length_mm:
+                dim_rows += f'<div class="tpl-dim-row"><span>Body blank</span><span>{v.body_length_mm:.0f} × {v.body_width_mm:.0f} × {v.body_thickness_mm:.0f} mm</span></div>'
+            if v.neck_length_mm or v.neck_length_thru_mm:
+                neck_len = v.neck_length_thru_mm if v.construction == 'neck-through' else v.neck_length_mm
+                neck_label = 'Neck blank (thru)' if v.construction == 'neck-through' else 'Neck blank'
+                dim_rows += f'<div class="tpl-dim-row"><span>{neck_label}</span><span>{neck_len:.0f} mm</span></div>'
+            if v.nut_width_mm:
+                dim_rows += f'<div class="tpl-dim-row"><span>Nut width</span><span>{v.nut_width_mm:.1f} mm</span></div>'
+            if v.overall_length_mm:
+                dim_rows += f'<div class="tpl-dim-row"><span>Overall length</span><span>{v.overall_length_mm:.0f} mm</span></div>'
+
+            variants_html += f"""
+<div class="tpl-variant">
+  <div class="tpl-variant-header">
+    <div>
+      <span class="tpl-variant-label">{v.label}</span>{has_top_badge}
+      <span class="tpl-construction-badge">{construction_label}</span>
+    </div>
+  </div>
+  <div class="tpl-dims">
+    <div class="tpl-dim-row tpl-dim-scale">
+      <span>Scale</span><span>{v.scale_mm:.1f} mm ({v.strings}-string)</span>
+    </div>
+    {dim_rows}
+  </div>
+</div>"""
+
+        total_builds = len(t.builds)
+        builds_note = f'<span class="tpl-builds-count">{total_builds} build{"s" if total_builds != 1 else ""}</span>' if total_builds else ''
+
+        cards_html += f"""
+<div class="tpl-card">
+  <div class="tpl-card-header">
+    <div>
+      <div class="tpl-card-title">{t.name}</div>
+      <div class="tpl-card-type">{type_label} · {len(t.variants)} variant{"s" if len(t.variants) != 1 else ""}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      {builds_note}
+      <a href="/templates/{t.template_id}/edit" class="btn-sm">Edit</a>
+      <a href="/builds/new" class="btn-sm btn-primary">New Build</a>
+    </div>
+  </div>
+  {variants_html}
+</div>"""
+
+    if not cards_html:
+        cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No templates found.</p>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates · Tonewood Finder</title>
+  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/builds.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab">Builds</a>
+    <a href="/templates" class="nav-tab active">Templates</a>
+  </nav>
+</div>
+<div class="builds-wrap">
+  <div class="page-title-bar">
+    <div class="page-title">Instrument Templates</div>
+  </div>
+  <div class="tpl-list">
+    {cards_html}
+  </div>
+</div>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# /templates/<id>/edit  — edit template name/type and all variant dimensions
+# ---------------------------------------------------------------------------
+@app.route('/templates/<int:template_id>/edit', methods=['GET', 'POST'])
+def templates_edit(template_id):
+    t = InstrumentTemplate.query.get_or_404(template_id)
+
+    errors = []
+
+    if request.method == 'POST':
+        # --- Template-level fields ---
+        name = request.form.get('name', '').strip()
+        instrument_type = request.form.get('instrument_type', '').strip().lower()
+        notes = request.form.get('notes', '').strip()
+
+        if not name:
+            errors.append('Template name is required.')
+        elif name != t.name and InstrumentTemplate.query.filter_by(name=name).first():
+            errors.append('A template with that name already exists.')
+
+        if not errors:
+            t.name = name
+            t.instrument_type = instrument_type or None
+            t.notes = notes or None
+
+            # --- Variant fields ---
+            def _f(key):
+                raw = request.form.get(key, '').strip()
+                try:
+                    return float(raw) if raw else None
+                except ValueError:
+                    return None
+
+            for v in t.variants:
+                p = f'v{v.variant_id}_'
+                v.label         = request.form.get(f'{p}label', v.label).strip() or v.label
+                v.strings       = int(request.form.get(f'{p}strings', v.strings) or v.strings)
+                v.scale_mm      = float(request.form.get(f'{p}scale_mm', '') or v.scale_mm)
+                v.construction  = request.form.get(f'{p}construction', v.construction)
+                v.has_top       = request.form.get(f'{p}has_top') == '1'
+
+                v.body_length_mm      = _f(f'{p}body_length_mm')
+                v.body_width_mm       = _f(f'{p}body_width_mm')
+                v.body_thickness_mm   = _f(f'{p}body_thickness_mm')
+                v.neck_length_mm      = _f(f'{p}neck_length_mm')
+                v.neck_length_thru_mm = _f(f'{p}neck_length_thru_mm')
+                v.nut_width_mm        = _f(f'{p}nut_width_mm')
+                v.neck_width_heel_mm  = _f(f'{p}neck_width_heel_mm')
+                v.neck_thickness_1f_mm  = _f(f'{p}neck_thickness_1f_mm')
+                v.neck_thickness_12f_mm = _f(f'{p}neck_thickness_12f_mm')
+                v.headstock_length_mm = _f(f'{p}headstock_length_mm')
+                v.headstock_width_mm  = _f(f'{p}headstock_width_mm')
+                v.overall_length_mm   = _f(f'{p}overall_length_mm')
+
+            db.session.commit()
+            return f'<script>window.location="/templates"</script>'
+
+    def fv(val):
+        """Format a float for input value — blank if None."""
+        return '' if val is None else f'{val:g}'
+
+    variants_html = ''
+    for v in sorted(t.variants, key=lambda x: (x.strings, x.scale_mm)):
+        p = f'v{v.variant_id}_'
+        bolt_sel  = 'selected' if v.construction == 'bolt-on'      else ''
+        thru_sel  = 'selected' if v.construction == 'neck-through'  else ''
+        top_chk   = 'checked'  if v.has_top else ''
+
+        variants_html += f"""
+<div class="tpl-edit-variant">
+  <div class="tpl-edit-variant-title">Variant — {v.label}</div>
+
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Label</label>
+      <input type="text" name="{p}label" class="filter-input" value="{v.label}" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Strings</label>
+      <input type="number" name="{p}strings" class="filter-input" value="{v.strings}" min="1" max="12" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Scale (mm)</label>
+      <input type="number" name="{p}scale_mm" class="filter-input" value="{fv(v.scale_mm)}" step="0.1" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Construction</label>
+      <select name="{p}construction" class="filter-select">
+        <option value="bolt-on" {bolt_sel}>Bolt-on</option>
+        <option value="neck-through" {thru_sel}>Neck-through</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Body Blank</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Length (mm)</label>
+      <input type="number" name="{p}body_length_mm" class="filter-input" value="{fv(v.body_length_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Width (mm)</label>
+      <input type="number" name="{p}body_width_mm" class="filter-input" value="{fv(v.body_width_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness (mm)</label>
+      <input type="number" name="{p}body_thickness_mm" class="filter-input" value="{fv(v.body_thickness_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" name="{p}has_top" value="1" {top_chk}
+               style="accent-color:#34d399;width:14px;height:14px;">
+        Includes top blank
+      </label>
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Neck Blank</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Length bolt-on (mm)</label>
+      <input type="number" name="{p}neck_length_mm" class="filter-input" value="{fv(v.neck_length_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Length neck-thru (mm)</label>
+      <input type="number" name="{p}neck_length_thru_mm" class="filter-input" value="{fv(v.neck_length_thru_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Nut width (mm)</label>
+      <input type="number" name="{p}nut_width_mm" class="filter-input" value="{fv(v.nut_width_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Width at heel (mm)</label>
+      <input type="number" name="{p}neck_width_heel_mm" class="filter-input" value="{fv(v.neck_width_heel_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness at 1st fret (mm)</label>
+      <input type="number" name="{p}neck_thickness_1f_mm" class="filter-input" value="{fv(v.neck_thickness_1f_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness at 12th fret (mm)</label>
+      <input type="number" name="{p}neck_thickness_12f_mm" class="filter-input" value="{fv(v.neck_thickness_12f_mm)}" step="0.1">
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Headstock &amp; Overall</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Headstock length (mm)</label>
+      <input type="number" name="{p}headstock_length_mm" class="filter-input" value="{fv(v.headstock_length_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Headstock width (mm)</label>
+      <input type="number" name="{p}headstock_width_mm" class="filter-input" value="{fv(v.headstock_width_mm)}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Overall length (mm)</label>
+      <input type="number" name="{p}overall_length_mm" class="filter-input" value="{fv(v.overall_length_mm)}" step="0.1">
+    </div>
+  </div>
+</div>"""
+
+    error_html = ''
+    if errors:
+        error_html = '<div class="tpl-edit-error">' + '<br>'.join(errors) + '</div>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit {t.name} · Tonewood Finder</title>
+  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/builds.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/templates" style="color:#52525b;text-decoration:none;">← Templates</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab">Builds</a>
+    <a href="/templates" class="nav-tab active">Templates</a>
+  </nav>
+</div>
+<div class="builds-wrap builds-wrap--narrow" style="max-width:760px;">
+  <div class="page-title-bar">
+    <div class="page-title">Edit Template</div>
+  </div>
+  {error_html}
+  <form method="POST">
+    <div class="form-card" style="margin-bottom:16px;">
+      <div class="tpl-edit-section-label" style="margin-top:0;">Template</div>
+      <div class="tpl-edit-grid">
+        <div class="form-group">
+          <label class="filter-label">Name</label>
+          <input type="text" name="name" class="filter-input" value="{t.name}" required>
+        </div>
+        <div class="form-group">
+          <label class="filter-label">Type</label>
+          <input type="text" name="instrument_type" class="filter-input"
+                 value="{t.instrument_type or ''}" placeholder="e.g. bass, guitar">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="filter-label">Notes</label>
+        <textarea name="notes" class="filter-input"
+                  style="height:72px;resize:vertical;">{t.notes or ''}</textarea>
+      </div>
+    </div>
+
+    {variants_html}
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <a href="/templates" class="btn-primary">Cancel</a>
+      <button type="submit" class="btn-new-build">Save Changes</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
 # /builds  — list all saved builds
 # ---------------------------------------------------------------------------
 @app.route('/builds')
@@ -695,7 +1027,7 @@ def builds_index():
   <div class="build-progress-bar"><div class="build-progress-fill" style="width:{progress_pct}%"></div></div>
   <div class="build-card-meta">
     <span>{parts_done}/{parts_total} parts</span>
-    <span>{price_str}</span>
+    <span class="build-card-price">{price_str}</span>
     <span style="color:#3f3f46;">{updated}</span>
   </div>
 </a>"""
@@ -1037,7 +1369,10 @@ def builds_detail(build_id):
 <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;overflow-y:auto;">
   <div class="picker-modal">
     <div class="picker-header">
-      <span id="picker-title">Select product</span>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span id="picker-title">Select product</span>
+        <span id="picker-count" style="font-size:11px;font-weight:400;color:#71717a;"></span>
+      </div>
       <button onclick="closePicker()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
     </div>
     <div id="picker-body" style="padding:12px 0;">Loading…</div>
@@ -1051,6 +1386,7 @@ function openPicker(role, partId) {{
   currentPartId = partId;
   document.getElementById('picker-title').textContent = 'Select ' + role.charAt(0).toUpperCase() + role.slice(1);
   document.getElementById('picker-overlay').style.display = 'block';
+  document.getElementById('picker-count').textContent = '';
   document.getElementById('picker-body').innerHTML = '<div style="padding:20px;color:#52525b;">Loading candidates…</div>';
 
   fetch(`/api/builds/{build_id}/candidates/${{role}}`)
@@ -1064,10 +1400,12 @@ function closePicker() {{
 
 function renderPicker(data, role, partId) {{
   if (!data.length) {{
+    document.getElementById('picker-count').textContent = '';
     document.getElementById('picker-body').innerHTML =
       '<div style="padding:20px;color:#52525b;">No matching products found in database.</div>';
     return;
   }}
+  document.getElementById('picker-count').textContent = data.length + ' match' + (data.length === 1 ? '' : 'es') + ' found';
   let html = '<div class="picker-list">';
   data.forEach(p => {{
     const warn  = p.dims_unverified ? '<span class="badge-unverified">dims unverified</span>' : '<span class="badge-verified">dims ✓</span>';

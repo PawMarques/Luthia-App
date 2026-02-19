@@ -495,7 +495,8 @@ def import_vendor_products(file_path, sheet_name, alias_lookup=None):
 
     sci_col    = find_col(df.columns, ['scientific', 'latin'], required=True)
     price_col  = find_col(df.columns, ['price (sek)', 'price (eur)'], required=True)
-    length_col = find_col(df.columns, ['length'], required=False)
+    mm_length_col = find_col(df.columns, ['length (mm)'], required=False)
+    m_length_col  = find_col(df.columns, ['length (m)'],  required=False)
     listed_col = find_col(df.columns, ['as listed', 'listed'], required=False)
 
     if not sci_col or not price_col:
@@ -578,9 +579,13 @@ def import_vendor_products(file_path, sheet_name, alias_lookup=None):
         thickness_mm = safe_float(row['Thickness (mm)'])
         width_mm = safe_float(row['Width (mm)'])
 
-        length_value = safe_float(row[length_col]) if length_col else None
-        if length_value and length_col and '(m)' in length_col and '(mm)' not in length_col:
-            length_value = length_value * 1000
+        if mm_length_col:
+            length_value = safe_float(row[mm_length_col])
+        elif m_length_col:
+            raw = safe_float(row[m_length_col])
+            length_value = raw * 1000 if raw is not None else None
+        else:
+            length_value = None
 
         weight_kg = safe_float(row['Weight (kg)'])
 
