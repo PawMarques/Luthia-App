@@ -143,3 +143,139 @@ class Product(db.Model):
     unit = db.relationship('Unit', back_populates='products')
     images = db.relationship('ProductImage', back_populates='product',
                              cascade='all, delete-orphan', order_by='ProductImage.sort_order')
+
+# =============================================================================
+# BUILD PLANNER TABLES
+# =============================================================================
+
+class InstrumentTemplate(db.Model):
+    """
+    A named instrument design (e.g. 'Jazz Bass', 'Precision Bass').
+    Holds identity and type only — dimensions live in TemplateVariant.
+    """
+    __tablename__ = 'instrument_templates'
+
+    template_id     = db.Column(db.Integer, primary_key=True)
+    name            = db.Column(db.String(100), unique=True, nullable=False)
+    instrument_type = db.Column(db.String(50), default='bass')  # 'bass', 'guitar' etc.
+    notes           = db.Column(db.Text)
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+
+    variants = db.relationship('TemplateVariant', back_populates='template',
+                               cascade='all, delete-orphan')
+    builds   = db.relationship('Build', back_populates='template')
+
+
+class TemplateVariant(db.Model):
+    """
+    A specific configuration of a template defined by string count and scale.
+    Holds all the reference dimensions used to filter matching products.
+
+    Body dimensions:
+      body_length/width/thickness — blank dimensions (slightly larger than finished body)
+
+    Neck dimensions:
+      neck_length_mm      — nut to heel (bolt-on)
+      neck_length_thru_mm — full blank length nut to body tail (neck-through)
+
+    Construction:
+      construction — 'bolt-on' or 'neck-through'
+      has_top      — whether this variant typically uses a decorative top blank
+    """
+    __tablename__ = 'template_variants'
+
+    variant_id    = db.Column(db.Integer, primary_key=True)
+    template_id   = db.Column(db.Integer, db.ForeignKey('instrument_templates.template_id'),
+                               nullable=False)
+    label         = db.Column(db.String(100), nullable=False)  # e.g. '4-string 34"'
+    strings       = db.Column(db.Integer, nullable=False, default=4)
+    scale_mm      = db.Column(db.Float, nullable=False, default=864.0)  # 34" = 863.6 mm
+
+    # Body blank dimensions (mm)
+    body_length_mm    = db.Column(db.Float)
+    body_width_mm     = db.Column(db.Float)
+    body_thickness_mm = db.Column(db.Float)
+
+    # Neck dimensions (mm)
+    neck_length_mm        = db.Column(db.Float)  # bolt-on: nut to heel
+    neck_length_thru_mm   = db.Column(db.Float)  # neck-through: nut to body tail
+    neck_thickness_1f_mm  = db.Column(db.Float)  # thickness at 1st fret
+    neck_thickness_12f_mm = db.Column(db.Float)  # thickness at 12th fret
+    nut_width_mm          = db.Column(db.Float)
+    neck_width_heel_mm    = db.Column(db.Float)  # width at heel / 24th fret end
+
+    # Headstock dimensions (mm)
+    headstock_length_mm = db.Column(db.Float)
+    headstock_width_mm  = db.Column(db.Float)
+
+    # Overall
+    overall_length_mm = db.Column(db.Float)
+
+    # Construction flags
+    construction = db.Column(db.String(20), default='bolt-on')  # 'bolt-on' or 'neck-through'
+    has_top      = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    template = db.relationship('InstrumentTemplate', back_populates='variants')
+    builds   = db.relationship('Build', back_populates='variant')
+
+
+class Build(db.Model):
+    """
+    A saved luthier build — links a user-named project to a template variant
+    and holds the chosen products for each part role.
+    """
+    __tablename__ = 'builds'
+
+    build_id    = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(150), nullable=False)
+    template_id = db.Column(db.Integer, db.ForeignKey('instrument_templates.template_id'),
+                             nullable=False)
+    variant_id  = db.Column(db.Integer, db.ForeignKey('template_variants.variant_id'),
+                             nullable=False)
+    notes       = db.Column(db.Text)
+    total_price = db.Column(db.Float)          # cached sum, recomputed on save
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    template = db.relationship('InstrumentTemplate', back_populates='builds')
+    variant  = db.relationship('TemplateVariant',    back_populates='builds')
+    parts    = db.relationship('BuildPart', back_populates='build',
+                               cascade='all, delete-orphan')
+
+    def compute_total(self):
+        """Recompute and cache total_price from all assigned parts."""
+        self.total_price = sum(
+            p.product.price for p in self.parts if p.product_id is not None
+        )
+        return self.total_price
+
+
+class BuildPart(db.Model):
+    """
+    One part slot in a build (body, neck, fretboard, top).
+    product_id is nullable — a slot can exist before a product is chosen.
+
+    Flags:
+      thickness_warning — True if body + top combined thickness exceeds 45 mm
+      dims_unverified   — True if matched product has no dimension data
+    """
+    __tablename__ = 'build_parts'
+
+    part_id    = db.Column(db.Integer, primary_key=True)
+    build_id   = db.Column(db.Integer, db.ForeignKey('builds.build_id'), nullable=False)
+    role       = db.Column(db.String(20), nullable=False)
+    # roles: 'body', 'neck', 'fretboard', 'top'
+
+    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=True)
+    notes      = db.Column(db.Text)
+
+    # Warning flags (computed and stored at save time)
+    thickness_warning = db.Column(db.Boolean, default=False)
+    # True if body + top combined thickness > 45 mm
+    dims_unverified   = db.Column(db.Boolean, default=False)
+    # True if product has no dimension data (length/width/thickness all null)
+
+    build   = db.relationship('Build',   back_populates='parts')
+    product = db.relationship('Product')
