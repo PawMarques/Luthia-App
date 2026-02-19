@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from datetime import datetime, timedelta
-from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format, ProductImage
+from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format, ProductImage, \
+                   InstrumentTemplate, TemplateVariant, Build, BuildPart
 import os
 import uuid
 import traceback
@@ -165,7 +166,14 @@ def index():
       <div class="chips-row" id="chips-row"></div>
     </div>
 
-    <div class="header-right"></div>
+    <div class="header-right">
+      <a href="/builds" style="font-size:13px;color:#71717a;background:#1c1c1e;border:1px solid #2e2e32;
+         border-radius:6px;padding:6px 14px;text-decoration:none;white-space:nowrap;"
+         onmouseover="this.style.color='#f4f4f5';this.style.borderColor='#52525b'"
+         onmouseout="this.style.color='#71717a';this.style.borderColor='#2e2e32'">
+        🔨 Build Planner
+      </a>
+    </div>
   </div>
 </div>
 
@@ -530,6 +538,652 @@ def _fmt_dims(p):
     if p.width_mm:     parts.append(f'{p.width_mm:g}')
     if p.length_mm:    parts.append(f'{p.length_mm:g}')
     return (' × '.join(parts) + ' mm') if parts else ''
+
+
+""" BUILD PLANNER START """
+
+# ---------------------------------------------------------------------------
+# Helper: category name → category_id lookup
+# ---------------------------------------------------------------------------
+def _category_id(name):
+    c = Category.query.filter_by(name=name).first()
+    return c.category_id if c else None
+
+
+# ---------------------------------------------------------------------------
+# Helper: determine which part roles a variant needs
+# ---------------------------------------------------------------------------
+def _roles_for_variant(variant):
+    """Return ordered list of part role names for a given TemplateVariant."""
+    roles = ['body', 'neck', 'fretboard']
+    if variant.has_top:
+        roles.append('top')
+    return roles
+
+
+# ---------------------------------------------------------------------------
+# Helper: find candidate products for a given role + variant
+# ---------------------------------------------------------------------------
+ROLE_CATEGORIES = {
+    'body':      'Body Blank',
+    'neck':      'Neck Blank',
+    'fretboard': 'Fretboard Blank',
+    'top':       'Top Blank',
+}
+
+THICKNESS_WARN_LIMIT = 45.0   # mm — flag if body + top exceeds this
+
+
+def _candidate_products(role, variant):
+    """
+    Return list of candidate Product rows for a build part slot.
+
+    Tier 1 — category match (always applied).
+    Tier 2 — dimension filter (applied only when product has dimension data).
+              Products without dimensions are included but flagged dims_unverified.
+
+    For neck-through builds the neck blank length filter uses neck_length_thru_mm.
+    """
+    cat_name = ROLE_CATEGORIES.get(role)
+    if not cat_name:
+        return []
+
+    cat_id = _category_id(cat_name)
+    if not cat_id:
+        return []
+
+    query = Product.query.filter_by(category_id=cat_id)
+
+    # Determine required minimum blank dimensions from variant
+    min_length = min_width = min_thickness = None
+
+    if role == 'body':
+        min_length    = variant.body_length_mm
+        min_width     = variant.body_width_mm
+        min_thickness = variant.body_thickness_mm
+
+    elif role == 'neck':
+        if variant.construction == 'neck-through':
+            min_length = variant.neck_length_thru_mm
+        else:
+            min_length = variant.neck_length_mm
+        min_width     = variant.nut_width_mm        # narrowest point — safe lower bound
+        min_thickness = variant.neck_thickness_12f_mm
+
+    elif role == 'fretboard':
+        # Fretboard length ≈ scale length + small overhang
+        min_length    = (variant.scale_mm or 864) + 20
+        min_width     = (variant.nut_width_mm or 38) + 10
+        min_thickness = 6.0   # standard fretboard blank minimum
+
+    elif role == 'top':
+        min_length    = variant.body_length_mm
+        min_width     = variant.body_width_mm
+        min_thickness = 4.0   # typical top blank
+
+    products = query.order_by(Product.price.asc()).all()
+
+    results = []
+    for p in products:
+        has_dims = any([p.length_mm, p.width_mm, p.thickness_mm])
+        dim_ok   = True   # assume ok if no dims
+
+        if has_dims:
+            if min_length    and p.length_mm    and p.length_mm    < min_length:    dim_ok = False
+            if min_width     and p.width_mm     and p.width_mm     < min_width:     dim_ok = False
+            if min_thickness and p.thickness_mm and p.thickness_mm < min_thickness: dim_ok = False
+
+        if dim_ok:
+            results.append({
+                'product':        p,
+                'dims_unverified': not has_dims,
+            })
+
+    return results
+
+
+def _check_thickness_warning(build):
+    """
+    Set thickness_warning on the 'body' and 'top' BuildPart rows if their
+    combined thickness exceeds THICKNESS_WARN_LIMIT.
+    Clears the flag if no top is selected.
+    """
+    body_part = next((p for p in build.parts if p.role == 'body'), None)
+    top_part  = next((p for p in build.parts if p.role == 'top'),  None)
+
+    if not body_part or not top_part:
+        # Nothing to warn about
+        if body_part: body_part.thickness_warning = False
+        if top_part:  top_part.thickness_warning  = False
+        return
+
+    body_t = (body_part.product.thickness_mm
+              if body_part.product_id and body_part.product else None)
+    top_t  = (top_part.product.thickness_mm
+              if top_part.product_id  and top_part.product  else None)
+
+    warn = False
+    if body_t and top_t:
+        warn = (body_t + top_t) > THICKNESS_WARN_LIMIT
+
+    body_part.thickness_warning = warn
+    top_part.thickness_warning  = warn
+
+
+# ---------------------------------------------------------------------------
+# /builds  — list all saved builds
+# ---------------------------------------------------------------------------
+@app.route('/builds')
+def builds_index():
+    builds = Build.query.order_by(Build.updated_at.desc()).all()
+
+    cards_html = ''
+    if builds:
+        for b in builds:
+            parts_done  = sum(1 for p in b.parts if p.product_id)
+            parts_total = len(b.parts)
+            progress_pct = int(parts_done / parts_total * 100) if parts_total else 0
+            price_str = f'{b.total_price:,.0f} SEK' if b.total_price else '—'
+            updated   = b.updated_at.strftime('%Y-%m-%d') if b.updated_at else ''
+            warn = any(p.thickness_warning for p in b.parts)
+            warn_html = ' <span title="Thickness warning" style="color:#f59e0b;">⚠</span>' if warn else ''
+
+            cards_html += f"""
+<a href="/builds/{b.build_id}" class="build-card">
+  <div class="build-card-title">{b.name}{warn_html}</div>
+  <div class="build-card-sub">{b.template.name} · {b.variant.label}</div>
+  <div class="build-progress-bar"><div class="build-progress-fill" style="width:{progress_pct}%"></div></div>
+  <div class="build-card-meta">
+    <span>{parts_done}/{parts_total} parts</span>
+    <span>{price_str}</span>
+    <span style="color:#3f3f46;">{updated}</span>
+  </div>
+</a>"""
+    else:
+        cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" style="color:#34d399;">Create your first one!</a></p>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build Planner · Tonewood Finder</title>
+  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/builds.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab active">Builds</a>
+    <a href="/templates" class="nav-tab">Templates</a>
+  </nav>
+</div>
+<div class="builds-wrap">
+  <div class="page-title-bar">
+    <div class="page-title">Current builds</div>
+    <a href="/builds/new" class="btn-new-build">+ New Build</a>
+  </div>
+  <div class="builds-grid">
+    {cards_html}
+  </div>
+</div>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# /builds/new  — pick template + variant, name the build
+# ---------------------------------------------------------------------------
+@app.route('/builds/new', methods=['GET', 'POST'])
+def builds_new():
+    if request.method == 'POST':
+        template_id = request.form.get('template_id', type=int)
+        variant_id  = request.form.get('variant_id',  type=int)
+        name        = request.form.get('name', '').strip()
+
+        if not template_id or not variant_id or not name:
+            error = 'Please fill in all fields.'
+        else:
+            variant = TemplateVariant.query.get(variant_id)
+            if not variant or variant.template_id != template_id:
+                error = 'Invalid selection.'
+            else:
+                build = Build(name=name, template_id=template_id, variant_id=variant_id)
+                db.session.add(build)
+                db.session.flush()
+
+                # Create empty part slots
+                for role in _roles_for_variant(variant):
+                    db.session.add(BuildPart(build_id=build.build_id, role=role))
+
+                db.session.commit()
+                return f'<script>window.location="/builds/{build.build_id}"</script>'
+
+    templates = InstrumentTemplate.query.order_by(InstrumentTemplate.name).all()
+
+    # Build template→variants JSON for dynamic variant dropdown
+    import json
+    tpl_data = {}
+    for t in templates:
+        tpl_data[t.template_id] = [
+            {'id': v.variant_id, 'label': v.label, 'construction': v.construction,
+             'has_top': v.has_top}
+            for v in t.variants
+        ]
+
+    tpl_opts = '<option value="">Select instrument…</option>'
+    for t in templates:
+        tpl_opts += f'<option value="{t.template_id}">{t.name}</option>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Build · Tonewood Finder</title>
+  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/builds.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">New Build</div>
+        <div class="header-sub"><a href="/builds" style="color:#52525b;text-decoration:none;">← Build Planner</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="builds-wrap builds-wrap--narrow">
+  <div class="form-card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="filter-label">Build Name</label>
+        <input type="text" name="name" class="filter-input" style="height:40px;"
+               placeholder="e.g. My Ash Jazz Bass" required>
+      </div>
+      <div class="form-group">
+        <label class="filter-label">Instrument Template</label>
+        <select name="template_id" id="tpl-select" class="filter-select"
+                onchange="onTplChange()" required>
+          {tpl_opts}
+        </select>
+      </div>
+      <div class="form-group" id="variant-group" style="display:none;">
+        <label class="filter-label">Variant</label>
+        <select name="variant_id" id="var-select" class="filter-select" required>
+          <option value="">Select variant…</option>
+        </select>
+      </div>
+      <div id="variant-info" style="display:none;margin-top:8px;font-size:12px;color:#71717a;
+           background:#1c1c1e;border:1px solid #2e2e32;border-radius:6px;padding:10px 14px;
+           line-height:1.8;"></div>
+      <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;">
+        Create Build →
+      </button>
+    </form>
+  </div>
+</div>
+<script>
+const TPL_DATA = {json.dumps(tpl_data)};
+
+function onTplChange() {{
+  const tplId = parseInt(document.getElementById('tpl-select').value);
+  const varGroup = document.getElementById('variant-group');
+  const varSelect = document.getElementById('var-select');
+  const info = document.getElementById('variant-info');
+
+  if (!tplId || !TPL_DATA[tplId]) {{
+    varGroup.style.display = 'none';
+    info.style.display = 'none';
+    return;
+  }}
+
+  varSelect.innerHTML = '<option value="">Select variant…</option>';
+  TPL_DATA[tplId].forEach(v => {{
+    varSelect.innerHTML += `<option value="${{v.id}}">${{v.label}}</option>`;
+  }});
+
+  varGroup.style.display = 'flex';
+  varSelect.onchange = onVarChange;
+  if (TPL_DATA[tplId].length === 1) {{
+    varSelect.selectedIndex = 1;
+    onVarChange();
+  }}
+}}
+
+function onVarChange() {{
+  const tplId = parseInt(document.getElementById('tpl-select').value);
+  const varId = parseInt(document.getElementById('var-select').value);
+  const info = document.getElementById('variant-info');
+  if (!varId) {{ info.style.display = 'none'; return; }}
+  const v = TPL_DATA[tplId].find(x => x.id === varId);
+  if (!v) {{ info.style.display = 'none'; return; }}
+  const parts = ['Body', 'Neck', 'Fretboard'];
+  if (v.has_top) parts.push('Top');
+  info.innerHTML = `<strong style="color:#a1a1aa;">Parts needed:</strong> ${{parts.join(', ')}}<br>
+    <strong style="color:#a1a1aa;">Construction:</strong> ${{v.construction}}${{v.has_top ? ' · includes top blank' : ''}}`;
+  info.style.display = 'block';
+}}
+</script>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# /builds/<id>  — view / edit a saved build
+# ---------------------------------------------------------------------------
+@app.route('/builds/<int:build_id>')
+def builds_detail(build_id):
+    build = Build.query.get_or_404(build_id)
+    variant = build.variant
+
+    parts_html = ''
+    total = 0.0
+
+    role_icons = {'body': '🪵', 'neck': '🎸', 'fretboard': '📏', 'top': '✨'}
+
+    for part in build.parts:
+        role_label = part.role.capitalize()
+        icon = role_icons.get(part.role, '•')
+
+        if part.product_id and part.product:
+            p = part.product
+            species = p.species.commercial_name or p.species.scientific_name
+            vendor  = p.vendor.name
+            flag    = VENDOR_FLAGS.get(p.vendor.country, '')
+            price   = p.price
+            total  += price
+
+            dims_parts = []
+            if p.thickness_mm: dims_parts.append(f'{p.thickness_mm:.0f}mm thick')
+            if p.width_mm:     dims_parts.append(f'{p.width_mm:.0f}mm wide')
+            if p.length_mm:    dims_parts.append(f'{p.length_mm:.0f}mm long')
+            dims_str = ' · '.join(dims_parts) if dims_parts else 'dimensions not specified'
+
+            warn_html = ''
+            if part.thickness_warning:
+                warn_html = '<div class="part-warning">⚠ Combined body + top thickness exceeds 45mm — body may need planing</div>'
+            if part.dims_unverified:
+                warn_html += '<div class="part-notice">ℹ Dimensions not specified by vendor — verify suitability before ordering</div>'
+
+            link_html = f'<a href="{p.product_url}" target="_blank" class="view-link" style="font-size:11px;">View ↗</a>' if p.product_url else ''
+
+            grade_html = f'<span class="badge-grade">{p.grade.name}</span>' if p.grade else ''
+
+            parts_html += f"""
+<div class="part-row">
+  <div class="part-role">{icon} {role_label}</div>
+  <div class="part-detail">
+    <div class="part-species">{species} {grade_html}</div>
+    <div class="part-meta">{vendor} {flag} · {dims_str}</div>
+    {warn_html}
+  </div>
+  <div class="part-price">{price:,.0f} <span style="color:#52525b;font-size:11px;">SEK</span></div>
+  <div class="part-actions">
+    {link_html}
+    <button class="btn-sm" onclick="openPicker('{part.role}', {part.part_id})">Change</button>
+  </div>
+</div>"""
+        else:
+            parts_html += f"""
+<div class="part-row part-empty">
+  <div class="part-role">{icon} {role_label}</div>
+  <div class="part-detail" style="color:#52525b;">No product selected</div>
+  <div class="part-price">—</div>
+  <div class="part-actions">
+    <button class="btn-primary btn-sm" onclick="openPicker('{part.role}', {part.part_id})">Select</button>
+  </div>
+</div>"""
+
+    # Dimension reference panel
+    ref = variant
+    construction_label = ref.construction.replace('-', ' ').title()
+    neck_len = ref.neck_length_thru_mm if ref.construction == 'neck-through' else ref.neck_length_mm
+    neck_label = f"Neck-thru blank: {neck_len:.0f}mm" if ref.construction == 'neck-through' else f"Neck blank (nut→heel): {neck_len:.0f}mm"
+
+    case_warn = ''
+    if ref.overall_length_mm and ref.overall_length_mm > 1250:
+        case_warn = ' <span style="color:#f59e0b;" title="Exceeds standard case length of 1250mm">⚠</span>'
+    if ref.body_width_mm and ref.body_width_mm > 380:
+        case_warn += ' <span style="color:#f59e0b;" title="Exceeds standard case width of 380mm">⚠</span>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{build.name} · Build Planner</title>
+  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/builds.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab">Builds</a>
+    <a href="/templates" class="nav-tab">Templates</a>
+    <a href="/builds/{build.build_id}" class="nav-tab active">{build.name}</a>
+  </nav>
+</div>
+
+<div class="builds-wrap build-detail-grid">
+
+  <!-- Left: parts -->
+  <div>
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">{build.name}</div>
+        <div class="page-title-sub">{build.template.name} · {variant.label}</div>
+      </div>
+    </div>
+    <div class="section-label">Parts</div>
+    <div class="parts-list">
+      {parts_html}
+    </div>
+    <div class="total-bar">
+      <span>Build Total</span>
+      <span class="total-price">{total:,.0f} <span style="color:#52525b;font-size:13px;">SEK</span></span>
+    </div>
+  </div>
+
+  <!-- Right: reference dimensions -->
+  <div>
+    <div class="page-title-bar" style="justify-content:flex-end;">
+      <button class="btn-delete-build" onclick="deleteBuild({build.build_id})">&#8722; Delete Build</button>
+    </div>
+    <div class="section-label">Reference Dimensions</div>
+    <div class="ref-panel">
+      <div class="ref-row"><span>Construction</span><span>{construction_label}</span></div>
+      <div class="ref-row ref-section">Body Blank</div>
+      <div class="ref-row"><span>Length</span><span>{ref.body_length_mm:.0f} mm</span></div>
+      <div class="ref-row"><span>Width</span><span>{ref.body_width_mm:.0f} mm</span></div>
+      <div class="ref-row"><span>Thickness</span><span>{ref.body_thickness_mm:.0f} mm</span></div>
+      <div class="ref-row ref-section">Neck Blank</div>
+      <div class="ref-row"><span>{neck_label}</span></div>
+      <div class="ref-row"><span>Nut width</span><span>{ref.nut_width_mm:.1f} mm</span></div>
+      <div class="ref-row"><span>Width at heel</span><span>{ref.neck_width_heel_mm:.1f} mm</span></div>
+      <div class="ref-row"><span>Thickness at 1st fret</span><span>{ref.neck_thickness_1f_mm:.1f} mm</span></div>
+      <div class="ref-row"><span>Thickness at 12th fret</span><span>{ref.neck_thickness_12f_mm:.1f} mm</span></div>
+      <div class="ref-row ref-section">Overall</div>
+      <div class="ref-row"><span>Overall length</span><span>{ref.overall_length_mm:.0f} mm {case_warn}</span></div>
+      <div class="ref-row"><span>Scale</span><span>{ref.scale_mm:.1f} mm ({ref.strings}-string)</span></div>
+    </div>
+    {'<div class="case-warn-note">⚠ One or more dimensions may exceed standard transport case limits (L 1250mm · W 380mm)</div>' if case_warn else ''}
+  </div>
+
+</div>
+
+<!-- Product picker modal -->
+<div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;overflow-y:auto;">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <span id="picker-title">Select product</span>
+      <button onclick="closePicker()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div id="picker-body" style="padding:12px 0;">Loading…</div>
+  </div>
+</div>
+
+<script>
+let currentPartId = null;
+
+function openPicker(role, partId) {{
+  currentPartId = partId;
+  document.getElementById('picker-title').textContent = 'Select ' + role.charAt(0).toUpperCase() + role.slice(1);
+  document.getElementById('picker-overlay').style.display = 'block';
+  document.getElementById('picker-body').innerHTML = '<div style="padding:20px;color:#52525b;">Loading candidates…</div>';
+
+  fetch(`/api/builds/{build_id}/candidates/${{role}}`)
+    .then(r => r.json())
+    .then(data => renderPicker(data, role, partId));
+}}
+
+function closePicker() {{
+  document.getElementById('picker-overlay').style.display = 'none';
+}}
+
+function renderPicker(data, role, partId) {{
+  if (!data.length) {{
+    document.getElementById('picker-body').innerHTML =
+      '<div style="padding:20px;color:#52525b;">No matching products found in database.</div>';
+    return;
+  }}
+  let html = '<div class="picker-list">';
+  data.forEach(p => {{
+    const warn  = p.dims_unverified ? '<span class="badge-unverified">dims unverified</span>' : '<span class="badge-verified">dims ✓</span>';
+    const dims  = p.dims ? `<span class="picker-dims"> · ${{p.dims}}</span>` : '';
+    const grade = p.grade ? `<span class="badge-grade">${{p.grade}}</span>` : '';
+    html += `
+<div class="picker-row" onclick="selectProduct(${{partId}}, ${{p.id}})">
+  <div>
+    <span class="picker-species">${{p.species}}</span>
+    ${{grade}} ${{warn}}
+    <div class="picker-meta">${{p.vendor}} ${{p.flag}}${{dims}}</div>
+  </div>
+  <div class="picker-price">${{p.price.toFixed(0)}} <span style="color:#52525b;font-size:11px;">SEK</span></div>
+</div>`;
+  }});
+  html += '</div>';
+  document.getElementById('picker-body').innerHTML = html;
+}}
+
+function selectProduct(partId, productId) {{
+  fetch(`/api/builds/{build_id}/parts/${{partId}}`, {{
+    method: 'PATCH',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify({{product_id: productId}})
+  }})
+  .then(r => r.json())
+  .then(() => {{ closePicker(); location.reload(); }});
+}}
+
+function deleteBuild(buildId) {{
+  if (!confirm('Delete this build? This cannot be undone.')) return;
+  fetch(`/api/builds/${{buildId}}`, {{method: 'DELETE'}})
+    .then(() => window.location = '/builds');
+}}
+
+document.getElementById('picker-overlay').addEventListener('click', function(e) {{
+  if (e.target === this) closePicker();
+}});
+</script>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# API: candidate products for a role
+# ---------------------------------------------------------------------------
+@app.route('/api/builds/<int:build_id>/candidates/<role>')
+def api_build_candidates(build_id, role):
+    build = Build.query.get_or_404(build_id)
+    candidates = _candidate_products(role, build.variant)
+
+    rows = []
+    for c in candidates:
+        p = c['product']
+        dims_parts = []
+        if p.thickness_mm: dims_parts.append(f'{p.thickness_mm:.0f}mm thick')
+        if p.width_mm:     dims_parts.append(f'{p.width_mm:.0f}mm wide')
+        if p.length_mm:    dims_parts.append(f'{p.length_mm:.0f}mm long')
+
+        rows.append({
+            'id':              p.product_id,
+            'species':         p.species.commercial_name or p.species.scientific_name,
+            'vendor':          p.vendor.name,
+            'flag':            VENDOR_FLAGS.get(p.vendor.country, ''),
+            'grade':           p.grade.name if p.grade else '',
+            'price':           round(p.price, 2),
+            'dims':            ' · '.join(dims_parts),
+            'dims_unverified': c['dims_unverified'],
+            'url':             p.product_url or '',
+        })
+
+    return jsonify(rows)
+
+
+# ---------------------------------------------------------------------------
+# API: update a build part (assign product)
+# ---------------------------------------------------------------------------
+@app.route('/api/builds/<int:build_id>/parts/<int:part_id>', methods=['PATCH'])
+def api_build_part_update(build_id, part_id):
+    build = Build.query.get_or_404(build_id)
+    part  = BuildPart.query.filter_by(part_id=part_id, build_id=build_id).first_or_404()
+
+    data = request.get_json()
+    product_id = data.get('product_id')
+
+    part.product_id = product_id
+
+    # Set dims_unverified flag
+    if product_id:
+        p = Product.query.get(product_id)
+        part.dims_unverified = not any([p.length_mm, p.width_mm, p.thickness_mm])
+    else:
+        part.dims_unverified = False
+
+    # Recompute thickness warning across body + top
+    _check_thickness_warning(build)
+
+    # Recompute total price
+    build.compute_total()
+    build.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({'ok': True, 'total': build.total_price})
+
+
+# ---------------------------------------------------------------------------
+# API: delete a build
+# ---------------------------------------------------------------------------
+@app.route('/api/builds/<int:build_id>', methods=['DELETE'])
+def api_build_delete(build_id):
+    build = Build.query.get_or_404(build_id)
+    db.session.delete(build)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+""" BUILD PLANNER END """
 
 
 if __name__ == '__main__':
