@@ -132,39 +132,40 @@ def index():
     </div>
 
     <div class="header-filters">
-      <div class="filter-group">
-        <label class="filter-label">Species</label>
-        <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
-          {species_opts}
-        </select>
+      <div class="header-filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Species</label>
+          <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
+            {species_opts}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Vendor</label>
+          <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
+            {vendor_opts}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
+            {cat_opts}
+          </select>
+        </div>
+        <div class="filter-group" id="format-group" style="display:none;">
+          <label class="filter-label">Format</label>
+          <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
+            <option value="">All formats</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Max price (SEK)</label>
+          <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
+        </div>
       </div>
-      <div class="filter-group">
-        <label class="filter-label">Vendor</label>
-        <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
-          {vendor_opts}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Category</label>
-        <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
-          {cat_opts}
-        </select>
-      </div>
-      <div class="filter-group" id="format-group" style="display:none;">
-        <label class="filter-label">Format</label>
-        <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
-          <option value="">All formats</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Max price (SEK)</label>
-        <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
-      </div>
-    </div>
-
-    <div class="header-right">
       <div class="chips-row" id="chips-row"></div>
     </div>
+
+    <div class="header-right"></div>
   </div>
 </div>
 
