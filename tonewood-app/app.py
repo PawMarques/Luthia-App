@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from datetime import datetime, timedelta
 from models import db, Species, SpeciesAlias, Product, Vendor, Category, Grade, Format, ProductImage, \
                    InstrumentTemplate, TemplateVariant, Build, BuildPart
@@ -70,6 +70,10 @@ def staleness_cell(last_updated):
 
 @app.route('/')
 def index():
+    return redirect(url_for('builds_index'))
+
+@app.route('/browse')
+def browse():
     """Home page — dropdown population only; products loaded live via /api/products"""
     try:
         from sqlalchemy import func
