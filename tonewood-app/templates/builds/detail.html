@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/builds.css">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab">Builds</a>
+    <a href="/templates" class="nav-tab">Templates</a>
+    <a href="/builds/{{ build.build_id }}" class="nav-tab active">{{ build.name }}</a>
+  </nav>
+</div>
+
+<div class="builds-wrap build-detail-grid">
+
+  <!-- Left: parts -->
+  <div>
+    <div class="page-title-bar">
+      <div>
+        <div class="page-title">{{ build.name }}</div>
+        <div class="page-title-sub">{{ build.template.name }} · {{ variant.label }}</div>
+      </div>
+    </div>
+    <div class="section-label">Parts</div>
+    <div class="parts-list">
+      {{ parts_html | safe }}
+    </div>
+    <div class="total-bar">
+      <span>Build Total</span>
+      <span class="total-price">{{ total_str }} <span style="color:#52525b;font-size:13px;">SEK</span></span>
+    </div>
+  </div>
+
+  <!-- Right: reference dimensions -->
+  <div>
+    <div class="page-title-bar" style="justify-content:flex-end;">
+      <button class="btn-delete-build" onclick="deleteBuild({{ build.build_id }})">&#8722; Delete Build</button>
+    </div>
+    <div class="section-label">Reference Dimensions</div>
+    <div class="ref-panel">
+      <div class="ref-row"><span>Construction</span><span>{{ construction_label }}</span></div>
+      <div class="ref-row ref-section">Body Blank</div>
+      <div class="ref-row"><span>Length</span><span>{{ "%.0f" % ref.body_length_mm }} mm</span></div>
+      <div class="ref-row"><span>Width</span><span>{{ "%.0f" % ref.body_width_mm }} mm</span></div>
+      <div class="ref-row"><span>Thickness</span><span>{{ "%.0f" % ref.body_thickness_mm }} mm</span></div>
+      <div class="ref-row ref-section">Neck Blank</div>
+      <div class="ref-row"><span>{{ neck_label }}</span></div>
+      <div class="ref-row"><span>Nut width</span><span>{{ "%.1f" % ref.nut_width_mm }} mm</span></div>
+      <div class="ref-row"><span>Width at heel</span><span>{{ "%.1f" % ref.neck_width_heel_mm }} mm</span></div>
+      <div class="ref-row"><span>Thickness at 1st fret</span><span>{{ "%.1f" % ref.neck_thickness_1f_mm }} mm</span></div>
+      <div class="ref-row"><span>Thickness at 12th fret</span><span>{{ "%.1f" % ref.neck_thickness_12f_mm }} mm</span></div>
+      <div class="ref-row ref-section">Overall</div>
+      <div class="ref-row"><span>Overall length</span><span>{{ "%.0f" % ref.overall_length_mm }} mm {{ case_warn | safe }}</span></div>
+      <div class="ref-row"><span>Scale</span><span>{{ "%.1f" % ref.scale_mm }} mm ({{ ref.strings }}-string)</span></div>
+    </div>
+    {% if case_warn %}
+    <div class="case-warn-note">⚠ One or more dimensions may exceed standard transport case limits (L 1250mm · W 380mm)</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Product picker modal -->
+<div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;overflow-y:auto;">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span id="picker-title">Select product</span>
+        <span id="picker-count" style="font-size:11px;font-weight:400;color:#71717a;"></span>
+      </div>
+      <button onclick="closePicker()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div id="picker-body" style="padding:12px 0;">Loading…</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPartId = null;
+
+function openPicker(role, partId) {
+  currentPartId = partId;
+  document.getElementById('picker-title').textContent = 'Select ' + role.charAt(0).toUpperCase() + role.slice(1);
+  document.getElementById('picker-overlay').style.display = 'block';
+  document.getElementById('picker-count').textContent = '';
+  document.getElementById('picker-body').innerHTML = '<div style="padding:20px;color:#52525b;">Loading candidates…</div>';
+
+  fetch(`/api/builds/{{ build.build_id }}/candidates/${role}`)
+    .then(r => r.json())
+    .then(data => renderPicker(data, role, partId));
+}
+
+function closePicker() {
+  document.getElementById('picker-overlay').style.display = 'none';
+}
+
+function renderPicker(data, role, partId) {
+  if (!data.length) {
+    document.getElementById('picker-count').textContent = '';
+    document.getElementById('picker-body').innerHTML =
+      '<div style="padding:20px;color:#52525b;">No matching products found in database.</div>';
+    return;
+  }
+  document.getElementById('picker-count').textContent = data.length + ' match' + (data.length === 1 ? '' : 'es') + ' found';
+  let html = '<div class="picker-list">';
+  data.forEach(p => {
+    const warn  = p.dims_unverified ? '<span class="badge-unverified">dims unverified</span>' : '<span class="badge-verified">dims ✓</span>';
+    const dims  = p.dims ? `<span class="picker-dims"> · ${p.dims}</span>` : '';
+    const grade = p.grade ? `<span class="badge-grade">${p.grade}</span>` : '';
+    html += `
+<div class="picker-row" onclick="selectProduct(${partId}, ${p.id})">
+  <div>
+    <span class="picker-species">${p.species}</span>
+    ${grade} ${warn}
+    <div class="picker-meta">${p.vendor} ${p.flag}${dims}</div>
+  </div>
+  <div class="picker-price">${p.price.toFixed(0)} <span style="color:#52525b;font-size:11px;">SEK</span></div>
+</div>`;
+  });
+  html += '</div>';
+  document.getElementById('picker-body').innerHTML = html;
+}
+
+function selectProduct(partId, productId) {
+  fetch(`/api/builds/{{ build.build_id }}/parts/${partId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({product_id: productId})
+  })
+  .then(r => r.json())
+  .then(() => { closePicker(); location.reload(); });
+}
+
+function deleteBuild(buildId) {
+  if (!confirm('Delete this build? This cannot be undone.')) return;
+  fetch(`/api/builds/${buildId}`, {method: 'DELETE'})
+    .then(() => window.location = '/builds');
+}
+
+document.getElementById('picker-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closePicker();
+});
+</script>
+{% endblock %}

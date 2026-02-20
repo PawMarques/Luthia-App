@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="header">
+  <div class="header-bar">
+    <div class="header-left">
+      <span>🎸</span>
+      <div>
+        <div class="header-title">Tonewood Finder</div>
+        <div class="header-sub">{{ vendor_count }} vendors · {{ total_products }} products</div>
+      </div>
+    </div>
+
+    <div class="header-filters">
+      <div class="header-filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Species</label>
+          <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
+            {{ species_opts | safe }}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Vendor</label>
+          <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
+            {{ vendor_opts | safe }}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
+            {{ cat_opts | safe }}
+          </select>
+        </div>
+        <div class="filter-group" id="format-group" style="display:none;">
+          <label class="filter-label">Format</label>
+          <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
+            <option value="">All formats</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Max price (SEK)</label>
+          <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
+        </div>
+      </div>
+      <div class="chips-row" id="chips-row"></div>
+    </div>
+
+    <div class="header-right">
+      <a href="/builds" style="font-size:13px;color:#71717a;background:#1c1c1e;border:1px solid #2e2e32;
+         border-radius:6px;padding:6px 14px;text-decoration:none;white-space:nowrap;"
+         onmouseover="this.style.color='#f4f4f5';this.style.borderColor='#52525b'"
+         onmouseout="this.style.color='#71717a';this.style.borderColor='#2e2e32'">
+        🔨 Build Planner
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="results-bar">
+    <span id="results-text">Loading…</span>
+    <div class="pager" id="pager-top"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th data-col="species"  onclick="sortBy('species')" >Species</th>
+          <th data-col="vendor"   onclick="sortBy('vendor')"  >Vendor</th>
+          <th data-col="category" onclick="sortBy('category')">Category</th>
+          <th data-col="format"   onclick="sortBy('format')"  >Format</th>
+          <th data-col="grade"    onclick="sortBy('grade')"   >Grade</th>
+          <th data-col="price"    onclick="sortBy('price')"   >Price</th>
+          <th>Updated</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    </div>
+    <div class="table-footer">
+      <span class="footer-count" id="footer-count"></span>
+      <div class="pager" id="pager"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/tonewood-app.js" type="text/javascript"></script>
+{% endblock %}

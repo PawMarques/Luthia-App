@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/builds.css">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">New Build</div>
+        <div class="header-sub"><a href="/builds" style="color:#52525b;text-decoration:none;">← Build Planner</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="builds-wrap builds-wrap--narrow">
+  <div class="form-card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="filter-label">Build Name</label>
+        <input type="text" name="name" class="filter-input" style="height:40px;"
+               placeholder="e.g. My Ash Jazz Bass" required>
+      </div>
+      <div class="form-group">
+        <label class="filter-label">Instrument Template</label>
+        <select name="template_id" id="tpl-select" class="filter-select"
+                onchange="onTplChange()" required>
+          {{ tpl_opts | safe }}
+        </select>
+      </div>
+      <div class="form-group" id="variant-group" style="display:none;">
+        <label class="filter-label">Variant</label>
+        <select name="variant_id" id="var-select" class="filter-select" required>
+          <option value="">Select variant…</option>
+        </select>
+      </div>
+      <div id="variant-info" style="display:none;margin-top:8px;font-size:12px;color:#71717a;
+           background:#1c1c1e;border:1px solid #2e2e32;border-radius:6px;padding:10px 14px;
+           line-height:1.8;"></div>
+      <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;">
+        Create Build →
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TPL_DATA = {{ tpl_data | tojson }};
+
+function onTplChange() {
+  const tplId = parseInt(document.getElementById('tpl-select').value);
+  const varGroup = document.getElementById('variant-group');
+  const varSelect = document.getElementById('var-select');
+  const info = document.getElementById('variant-info');
+
+  if (!tplId || !TPL_DATA[tplId]) {
+    varGroup.style.display = 'none';
+    info.style.display = 'none';
+    return;
+  }
+
+  varSelect.innerHTML = '<option value="">Select variant…</option>';
+  TPL_DATA[tplId].forEach(v => {
+    varSelect.innerHTML += `<option value="${v.id}">${v.label}</option>`;
+  });
+
+  varGroup.style.display = 'flex';
+  varSelect.onchange = onVarChange;
+  if (TPL_DATA[tplId].length === 1) {
+    varSelect.selectedIndex = 1;
+    onVarChange();
+  }
+}
+
+function onVarChange() {
+  const tplId = parseInt(document.getElementById('tpl-select').value);
+  const varId = parseInt(document.getElementById('var-select').value);
+  const info = document.getElementById('variant-info');
+  if (!varId) { info.style.display = 'none'; return; }
+  const v = TPL_DATA[tplId].find(x => x.id === varId);
+  if (!v) { info.style.display = 'none'; return; }
+  const parts = ['Body', 'Neck', 'Fretboard'];
+  if (v.has_top) parts.push('Top');
+  info.innerHTML = `<strong style="color:#a1a1aa;">Parts needed:</strong> ${parts.join(', ')}<br>
+    <strong style="color:#a1a1aa;">Construction:</strong> ${v.construction}${v.has_top ? ' · includes top blank' : ''}`;
+  info.style.display = 'block';
+}
+</script>
+{% endblock %}

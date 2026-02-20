@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/builds.css">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span>🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="/templates" style="color:#52525b;text-decoration:none;">← Templates</a></div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/builds" class="nav-tab">Builds</a>
+    <a href="/templates" class="nav-tab active">Templates</a>
+  </nav>
+</div>
+<div class="builds-wrap builds-wrap--narrow" style="max-width:760px;">
+  <div class="page-title-bar">
+    <div class="page-title">Edit Template</div>
+  </div>
+  {{ error_html | safe }}
+  <form method="POST">
+    <div class="form-card" style="margin-bottom:16px;">
+      <div class="tpl-edit-section-label" style="margin-top:0;">Template</div>
+      <div class="tpl-edit-grid">
+        <div class="form-group">
+          <label class="filter-label">Name</label>
+          <input type="text" name="name" class="filter-input" value="{{ t.name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="filter-label">Type</label>
+          <input type="text" name="instrument_type" class="filter-input"
+                 value="{{ t.instrument_type or '' }}" placeholder="e.g. bass, guitar">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="filter-label">Notes</label>
+        <textarea name="notes" class="filter-input"
+                  style="height:72px;resize:vertical;">{{ t.notes or '' }}</textarea>
+      </div>
+    </div>
+
+    {{ variants_html | safe }}
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <a href="/templates" class="btn-primary">Cancel</a>
+      <button type="submit" class="btn-new-build">Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

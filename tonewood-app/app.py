@@ -112,105 +112,16 @@ def index():
         for c, cnt in categories:
             cat_opts += f'<option value="{c.category_id}" data-name="{c.name}">{c.name} ({cnt})</option>\n'
 
-        return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tonewood Finder</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-</head>
-<body>
-
-<div class="header">
-  <div class="header-bar">
-    <div class="header-left">
-      <span>🎸</span>
-      <div>
-        <div class="header-title">Tonewood Finder</div>
-        <div class="header-sub">{len(vendors)} vendors · {total_products} products</div>
-      </div>
-    </div>
-
-    <div class="header-filters">
-      <div class="header-filters-row">
-        <div class="filter-group">
-          <label class="filter-label">Species</label>
-          <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
-            {species_opts}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Vendor</label>
-          <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
-            {vendor_opts}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Category</label>
-          <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
-            {cat_opts}
-          </select>
-        </div>
-        <div class="filter-group" id="format-group" style="display:none;">
-          <label class="filter-label">Format</label>
-          <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
-            <option value="">All formats</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Max price (SEK)</label>
-          <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
-        </div>
-      </div>
-      <div class="chips-row" id="chips-row"></div>
-    </div>
-
-    <div class="header-right">
-      <a href="/builds" style="font-size:13px;color:#71717a;background:#1c1c1e;border:1px solid #2e2e32;
-         border-radius:6px;padding:6px 14px;text-decoration:none;white-space:nowrap;"
-         onmouseover="this.style.color='#f4f4f5';this.style.borderColor='#52525b'"
-         onmouseout="this.style.color='#71717a';this.style.borderColor='#2e2e32'">
-        🔨 Build Planner
-      </a>
-    </div>
-  </div>
-</div>
-
-<div class="main">
-
-  <div class="results-bar">
-    <span id="results-text">Loading…</span>
-    <div class="pager" id="pager-top"></div>
-  </div>
-
-  <div class="table-wrap">
-    <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th data-col="species"  onclick="sortBy('species')" >Species</th>
-          <th data-col="vendor"   onclick="sortBy('vendor')"  >Vendor</th>
-          <th data-col="category" onclick="sortBy('category')">Category</th>
-          <th data-col="format"   onclick="sortBy('format')"  >Format</th>
-          <th data-col="grade"    onclick="sortBy('grade')"   >Grade</th>
-          <th data-col="price"    onclick="sortBy('price')"   >Price</th>
-          <th>Updated</th>
-          <th>Link</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    </div>
-    <div class="table-footer">
-      <span class="footer-count" id="footer-count"></span>
-      <div class="pager" id="pager"></div>
-    </div>
-  </div>
-</div>
-<script src="/static/tonewood-app.js" type="text/javascript"></script>
-</body>
-</html>"""
+        return render_template('index.html',
+            species_opts=species_opts,
+            vendor_opts=vendor_opts,
+            cat_opts=cat_opts,
+            total_products=total_products,
+            vendor_count=len(vendors),
+            active_nav='browse',
+            breadcrumb=[('Browse Woods', None)],
+            page_title='Tonewood Finder',
+        )
 
     except Exception as e:
         return f"<h1>Error</h1><p>{str(e)}</p><pre>{traceback.format_exc()}</pre>"
@@ -736,41 +647,12 @@ def templates_index():
     if not cards_html:
         cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No templates found.</p>'
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Templates · Tonewood Finder</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-  <link rel="stylesheet" href="/static/builds.css">
-</head>
-<body>
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab">Builds</a>
-    <a href="/templates" class="nav-tab active">Templates</a>
-  </nav>
-</div>
-<div class="builds-wrap">
-  <div class="page-title-bar">
-    <div class="page-title">Instrument Templates</div>
-  </div>
-  <div class="tpl-list">
-    {cards_html}
-  </div>
-</div>
-</body>
-</html>"""
+    return render_template('templates/index.html',
+        cards_html=cards_html,
+        active_nav='templates',
+        breadcrumb=[('Templates', None)],
+        page_title='Templates · Tonewood Finder',
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -939,67 +821,14 @@ def templates_edit(template_id):
     if errors:
         error_html = '<div class="tpl-edit-error">' + '<br>'.join(errors) + '</div>'
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit {t.name} · Tonewood Finder</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-  <link rel="stylesheet" href="/static/builds.css">
-</head>
-<body>
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/templates" style="color:#52525b;text-decoration:none;">← Templates</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab">Builds</a>
-    <a href="/templates" class="nav-tab active">Templates</a>
-  </nav>
-</div>
-<div class="builds-wrap builds-wrap--narrow" style="max-width:760px;">
-  <div class="page-title-bar">
-    <div class="page-title">Edit Template</div>
-  </div>
-  {error_html}
-  <form method="POST">
-    <div class="form-card" style="margin-bottom:16px;">
-      <div class="tpl-edit-section-label" style="margin-top:0;">Template</div>
-      <div class="tpl-edit-grid">
-        <div class="form-group">
-          <label class="filter-label">Name</label>
-          <input type="text" name="name" class="filter-input" value="{t.name}" required>
-        </div>
-        <div class="form-group">
-          <label class="filter-label">Type</label>
-          <input type="text" name="instrument_type" class="filter-input"
-                 value="{t.instrument_type or ''}" placeholder="e.g. bass, guitar">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="filter-label">Notes</label>
-        <textarea name="notes" class="filter-input"
-                  style="height:72px;resize:vertical;">{t.notes or ''}</textarea>
-      </div>
-    </div>
-
-    {variants_html}
-
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-      <a href="/templates" class="btn-primary">Cancel</a>
-      <button type="submit" class="btn-new-build">Save Changes</button>
-    </div>
-  </form>
-</div>
-</body>
-</html>"""
+    return render_template('templates/edit.html',
+        t=t,
+        variants_html=variants_html,
+        error_html=error_html,
+        active_nav='templates',
+        breadcrumb=[('Templates', '/templates'), (f'Edit {t.name}', None)],
+        page_title=f'Edit {t.name} · Tonewood Finder',
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1034,42 +863,12 @@ def builds_index():
     else:
         cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" style="color:#34d399;">Create your first one!</a></p>'
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build Planner · Tonewood Finder</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-  <link rel="stylesheet" href="/static/builds.css">
-</head>
-<body>
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab active">Builds</a>
-    <a href="/templates" class="nav-tab">Templates</a>
-  </nav>
-</div>
-<div class="builds-wrap">
-  <div class="page-title-bar">
-    <div class="page-title">Current builds</div>
-    <a href="/builds/new" class="btn-new-build">+ New Build</a>
-  </div>
-  <div class="builds-grid">
-    {cards_html}
-  </div>
-</div>
-</body>
-</html>"""
+    return render_template('builds/index.html',
+        cards_html=cards_html,
+        active_nav='builds',
+        breadcrumb=[('Build Planner', None)],
+        page_title='Build Planner · Tonewood Finder',
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1102,8 +901,7 @@ def builds_new():
 
     templates = InstrumentTemplate.query.order_by(InstrumentTemplate.name).all()
 
-    # Build template→variants JSON for dynamic variant dropdown
-    import json
+    # Build template→variants data for dynamic variant dropdown
     tpl_data = {}
     for t in templates:
         tpl_data[t.template_id] = [
@@ -1116,101 +914,13 @@ def builds_new():
     for t in templates:
         tpl_opts += f'<option value="{t.template_id}">{t.name}</option>'
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Build · Tonewood Finder</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-  <link rel="stylesheet" href="/static/builds.css">
-</head>
-<body>
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">New Build</div>
-        <div class="header-sub"><a href="/builds" style="color:#52525b;text-decoration:none;">← Build Planner</a></div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="builds-wrap builds-wrap--narrow">
-  <div class="form-card">
-    <form method="POST">
-      <div class="form-group">
-        <label class="filter-label">Build Name</label>
-        <input type="text" name="name" class="filter-input" style="height:40px;"
-               placeholder="e.g. My Ash Jazz Bass" required>
-      </div>
-      <div class="form-group">
-        <label class="filter-label">Instrument Template</label>
-        <select name="template_id" id="tpl-select" class="filter-select"
-                onchange="onTplChange()" required>
-          {tpl_opts}
-        </select>
-      </div>
-      <div class="form-group" id="variant-group" style="display:none;">
-        <label class="filter-label">Variant</label>
-        <select name="variant_id" id="var-select" class="filter-select" required>
-          <option value="">Select variant…</option>
-        </select>
-      </div>
-      <div id="variant-info" style="display:none;margin-top:8px;font-size:12px;color:#71717a;
-           background:#1c1c1e;border:1px solid #2e2e32;border-radius:6px;padding:10px 14px;
-           line-height:1.8;"></div>
-      <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;">
-        Create Build →
-      </button>
-    </form>
-  </div>
-</div>
-<script>
-const TPL_DATA = {json.dumps(tpl_data)};
-
-function onTplChange() {{
-  const tplId = parseInt(document.getElementById('tpl-select').value);
-  const varGroup = document.getElementById('variant-group');
-  const varSelect = document.getElementById('var-select');
-  const info = document.getElementById('variant-info');
-
-  if (!tplId || !TPL_DATA[tplId]) {{
-    varGroup.style.display = 'none';
-    info.style.display = 'none';
-    return;
-  }}
-
-  varSelect.innerHTML = '<option value="">Select variant…</option>';
-  TPL_DATA[tplId].forEach(v => {{
-    varSelect.innerHTML += `<option value="${{v.id}}">${{v.label}}</option>`;
-  }});
-
-  varGroup.style.display = 'flex';
-  varSelect.onchange = onVarChange;
-  if (TPL_DATA[tplId].length === 1) {{
-    varSelect.selectedIndex = 1;
-    onVarChange();
-  }}
-}}
-
-function onVarChange() {{
-  const tplId = parseInt(document.getElementById('tpl-select').value);
-  const varId = parseInt(document.getElementById('var-select').value);
-  const info = document.getElementById('variant-info');
-  if (!varId) {{ info.style.display = 'none'; return; }}
-  const v = TPL_DATA[tplId].find(x => x.id === varId);
-  if (!v) {{ info.style.display = 'none'; return; }}
-  const parts = ['Body', 'Neck', 'Fretboard'];
-  if (v.has_top) parts.push('Top');
-  info.innerHTML = `<strong style="color:#a1a1aa;">Parts needed:</strong> ${{parts.join(', ')}}<br>
-    <strong style="color:#a1a1aa;">Construction:</strong> ${{v.construction}}${{v.has_top ? ' · includes top blank' : ''}}`;
-  info.style.display = 'block';
-}}
-</script>
-</body>
-</html>"""
+    return render_template('builds/new.html',
+        tpl_opts=tpl_opts,
+        tpl_data=tpl_data,
+        active_nav='builds',
+        breadcrumb=[('Build Planner', '/builds'), ('New Build', None)],
+        page_title='New Build · Tonewood Finder',
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1291,162 +1001,19 @@ def builds_detail(build_id):
     if ref.body_width_mm and ref.body_width_mm > 380:
         case_warn += ' <span style="color:#f59e0b;" title="Exceeds standard case width of 380mm">⚠</span>'
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{build.name} · Build Planner</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
-  <link rel="stylesheet" href="/static/builds.css">
-</head>
-<body>
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab">Builds</a>
-    <a href="/templates" class="nav-tab">Templates</a>
-    <a href="/builds/{build.build_id}" class="nav-tab active">{build.name}</a>
-  </nav>
-</div>
-
-<div class="builds-wrap build-detail-grid">
-
-  <!-- Left: parts -->
-  <div>
-    <div class="page-title-bar">
-      <div>
-        <div class="page-title">{build.name}</div>
-        <div class="page-title-sub">{build.template.name} · {variant.label}</div>
-      </div>
-    </div>
-    <div class="section-label">Parts</div>
-    <div class="parts-list">
-      {parts_html}
-    </div>
-    <div class="total-bar">
-      <span>Build Total</span>
-      <span class="total-price">{total:,.0f} <span style="color:#52525b;font-size:13px;">SEK</span></span>
-    </div>
-  </div>
-
-  <!-- Right: reference dimensions -->
-  <div>
-    <div class="page-title-bar" style="justify-content:flex-end;">
-      <button class="btn-delete-build" onclick="deleteBuild({build.build_id})">&#8722; Delete Build</button>
-    </div>
-    <div class="section-label">Reference Dimensions</div>
-    <div class="ref-panel">
-      <div class="ref-row"><span>Construction</span><span>{construction_label}</span></div>
-      <div class="ref-row ref-section">Body Blank</div>
-      <div class="ref-row"><span>Length</span><span>{ref.body_length_mm:.0f} mm</span></div>
-      <div class="ref-row"><span>Width</span><span>{ref.body_width_mm:.0f} mm</span></div>
-      <div class="ref-row"><span>Thickness</span><span>{ref.body_thickness_mm:.0f} mm</span></div>
-      <div class="ref-row ref-section">Neck Blank</div>
-      <div class="ref-row"><span>{neck_label}</span></div>
-      <div class="ref-row"><span>Nut width</span><span>{ref.nut_width_mm:.1f} mm</span></div>
-      <div class="ref-row"><span>Width at heel</span><span>{ref.neck_width_heel_mm:.1f} mm</span></div>
-      <div class="ref-row"><span>Thickness at 1st fret</span><span>{ref.neck_thickness_1f_mm:.1f} mm</span></div>
-      <div class="ref-row"><span>Thickness at 12th fret</span><span>{ref.neck_thickness_12f_mm:.1f} mm</span></div>
-      <div class="ref-row ref-section">Overall</div>
-      <div class="ref-row"><span>Overall length</span><span>{ref.overall_length_mm:.0f} mm {case_warn}</span></div>
-      <div class="ref-row"><span>Scale</span><span>{ref.scale_mm:.1f} mm ({ref.strings}-string)</span></div>
-    </div>
-    {'<div class="case-warn-note">⚠ One or more dimensions may exceed standard transport case limits (L 1250mm · W 380mm)</div>' if case_warn else ''}
-  </div>
-
-</div>
-
-<!-- Product picker modal -->
-<div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;overflow-y:auto;">
-  <div class="picker-modal">
-    <div class="picker-header">
-      <div style="display:flex;flex-direction:column;gap:2px;">
-        <span id="picker-title">Select product</span>
-        <span id="picker-count" style="font-size:11px;font-weight:400;color:#71717a;"></span>
-      </div>
-      <button onclick="closePicker()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
-    </div>
-    <div id="picker-body" style="padding:12px 0;">Loading…</div>
-  </div>
-</div>
-
-<script>
-let currentPartId = null;
-
-function openPicker(role, partId) {{
-  currentPartId = partId;
-  document.getElementById('picker-title').textContent = 'Select ' + role.charAt(0).toUpperCase() + role.slice(1);
-  document.getElementById('picker-overlay').style.display = 'block';
-  document.getElementById('picker-count').textContent = '';
-  document.getElementById('picker-body').innerHTML = '<div style="padding:20px;color:#52525b;">Loading candidates…</div>';
-
-  fetch(`/api/builds/{build_id}/candidates/${{role}}`)
-    .then(r => r.json())
-    .then(data => renderPicker(data, role, partId));
-}}
-
-function closePicker() {{
-  document.getElementById('picker-overlay').style.display = 'none';
-}}
-
-function renderPicker(data, role, partId) {{
-  if (!data.length) {{
-    document.getElementById('picker-count').textContent = '';
-    document.getElementById('picker-body').innerHTML =
-      '<div style="padding:20px;color:#52525b;">No matching products found in database.</div>';
-    return;
-  }}
-  document.getElementById('picker-count').textContent = data.length + ' match' + (data.length === 1 ? '' : 'es') + ' found';
-  let html = '<div class="picker-list">';
-  data.forEach(p => {{
-    const warn  = p.dims_unverified ? '<span class="badge-unverified">dims unverified</span>' : '<span class="badge-verified">dims ✓</span>';
-    const dims  = p.dims ? `<span class="picker-dims"> · ${{p.dims}}</span>` : '';
-    const grade = p.grade ? `<span class="badge-grade">${{p.grade}}</span>` : '';
-    html += `
-<div class="picker-row" onclick="selectProduct(${{partId}}, ${{p.id}})">
-  <div>
-    <span class="picker-species">${{p.species}}</span>
-    ${{grade}} ${{warn}}
-    <div class="picker-meta">${{p.vendor}} ${{p.flag}}${{dims}}</div>
-  </div>
-  <div class="picker-price">${{p.price.toFixed(0)}} <span style="color:#52525b;font-size:11px;">SEK</span></div>
-</div>`;
-  }});
-  html += '</div>';
-  document.getElementById('picker-body').innerHTML = html;
-}}
-
-function selectProduct(partId, productId) {{
-  fetch(`/api/builds/{build_id}/parts/${{partId}}`, {{
-    method: 'PATCH',
-    headers: {{'Content-Type': 'application/json'}},
-    body: JSON.stringify({{product_id: productId}})
-  }})
-  .then(r => r.json())
-  .then(() => {{ closePicker(); location.reload(); }});
-}}
-
-function deleteBuild(buildId) {{
-  if (!confirm('Delete this build? This cannot be undone.')) return;
-  fetch(`/api/builds/${{buildId}}`, {{method: 'DELETE'}})
-    .then(() => window.location = '/builds');
-}}
-
-document.getElementById('picker-overlay').addEventListener('click', function(e) {{
-  if (e.target === this) closePicker();
-}});
-</script>
-</body>
-</html>"""
+    return render_template('builds/detail.html',
+        build=build,
+        variant=variant,
+        parts_html=parts_html,
+        total_str=f'{total:,.0f}',
+        ref=ref,
+        construction_label=construction_label,
+        neck_label=neck_label,
+        case_warn=case_warn,
+        active_nav='builds',
+        breadcrumb=[('Build Planner', '/builds'), (build.name, None)],
+        page_title=f'{build.name} · Build Planner',
+    )
 
 
 # ---------------------------------------------------------------------------
