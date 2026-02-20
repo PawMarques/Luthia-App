@@ -22,12 +22,6 @@
     .btn-sm { font-family:inherit; font-size:12px; font-weight:500; color:#71717a; background:#1c1c1e; border:1px solid #2e2e32; border-radius:5px; padding:4px 10px; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-flex; align-items:center; transition:color .15s,border-color .15s; }
     .btn-sm:hover { color:#f4f4f5; border-color:#52525b; }
 
-    /* Nav tabs */
-    .nav-tabs { display:flex; gap:0; border-bottom:1px solid #27272a; padding:0 28px; background:#18181b; }
-    .nav-tab { font-size:13px; font-weight:500; color:#71717a; padding:11px 16px; cursor:pointer; text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s; white-space:nowrap; }
-    .nav-tab:hover { color:#a1a1aa; }
-    .nav-tab.active { color:#34d399; border-bottom-color:#34d399; }
-
     /* Page title bar */
     .page-title-bar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; min-height: 42px;}
     .page-title { font-size:20px; font-weight:700; color:#f4f4f5; margin-bottom:3px; }
