@@ -4,26 +4,16 @@
 <link rel="stylesheet" href="/static/builds.css">
 {% endblock %}
 
-{% block content %}
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab active">Builds</a>
-    <a href="/templates" class="nav-tab">Templates</a>
-  </nav>
+{% block header_actions %}
+<div class="header-actions">
+  <a href="/builds/new" class="btn-new-build">+ New Build</a>
 </div>
+{% endblock %}
+
+{% block content %}
 <div class="builds-wrap">
   <div class="page-title-bar">
     <div class="page-title">Current builds</div>
-    <a href="/builds/new" class="btn-new-build">+ New Build</a>
   </div>
   <div class="builds-grid">
     {{ cards_html | safe }}

@@ -5,23 +5,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="header">
-  <div class="header-top">
-    <div class="header-left">
-      <span>🔨</span>
-      <div>
-        <div class="header-title">Build Planner</div>
-        <div class="header-sub"><a href="/" style="color:#52525b;text-decoration:none;">← Tonewood Finder</a></div>
-      </div>
-    </div>
-  </div>
-  <nav class="nav-tabs">
-    <a href="/builds" class="nav-tab">Builds</a>
-    <a href="/templates" class="nav-tab">Templates</a>
-    <a href="/builds/{{ build.build_id }}" class="nav-tab active">{{ build.name }}</a>
-  </nav>
-</div>
-
 <div class="builds-wrap build-detail-grid">
 
   <!-- Left: parts -->
