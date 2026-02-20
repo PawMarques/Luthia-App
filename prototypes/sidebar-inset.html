@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonewood Finder — Variant B: Inset Sidebar</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sidebar-width: 232px;
+  --sidebar-width-collapsed: 52px;
+  --sidebar-transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --header-height: 48px;
+  --gap: 8px; /* inset gap around the floating sidebar */
+
+  /* Palette — identical to Variant A */
+  --page:       #0d0d0f;
+  --surface:    #111113;
+  --surface2:   #18181b;
+  --surface3:   #1c1c1f;
+  --border:     #27272a;
+  --border2:    #3f3f46;
+  --text:       #f4f4f5;
+  --text-mid:   #a1a1aa;
+  --text-dim:   #52525b;
+  --accent:     #34d399;
+  --accent-dim: #065f46;
+  --red:        #f87171;
+
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+/* ── LAYOUT SHELL ── */
+body {
+  background: var(--page);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  padding: var(--gap);
+  gap: var(--gap);
+  overflow: hidden;
+}
+
+/* ── SIDEBAR (INSET: floats inside the page padding) ── */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;              /* ← key inset detail */
+  display: flex;
+  flex-direction: column;
+  transition: width var(--sidebar-transition), min-width var(--sidebar-transition);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  /* subtle inner shadow for depth */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+body.collapsed .sidebar {
+  width: var(--sidebar-width-collapsed);
+  min-width: var(--sidebar-width-collapsed);
+}
+
+/* ── SIDEBAR RAIL ── */
+.sidebar-rail {
+  position: absolute;
+  right: -1px; top: 0; bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.sidebar:hover .sidebar-rail { opacity: 1; }
+.sidebar-rail::after {
+  content: '';
+  position: absolute;
+  right: 1px; top: 50%;
+  transform: translateY(-50%);
+  width: 2px; height: 36px;
+  background: var(--border2);
+  border-radius: 1px;
+}
+
+/* ── SIDEBAR HEADER ── */
+.sidebar-header {
+  height: 56px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  overflow: hidden;
+  /* slightly taller than flush variant — gives it a bit more presence */
+}
+
+.brand-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.brand-text {
+  overflow: hidden;
+  transition: opacity var(--sidebar-transition), width var(--sidebar-transition);
+  white-space: nowrap;
+}
+.brand-name {
+  font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+}
+.brand-sub {
+  font-size: 10px; color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+body.collapsed .brand-text { opacity: 0; width: 0; }
+
+/* ── SIDEBAR CONTENT ── */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 6px 0;
+  scrollbar-width: none;
+}
+.sidebar-content::-webkit-scrollbar { display: none; }
+
+.nav-group { padding: 2px 0; }
+
+.nav-group-label {
+  font-size: 10px; font-weight: 500; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 8px 16px 4px;
+  white-space: nowrap; overflow: hidden;
+  transition: opacity var(--sidebar-transition);
+  font-family: 'IBM Plex Mono', monospace;
+}
+body.collapsed .nav-group-label { opacity: 0; }
+
+.nav-divider {
+  height: 1px; background: var(--border);
+  margin: 4px 10px;
+  transition: margin var(--sidebar-transition);
+}
+body.collapsed .nav-divider { margin: 4px 5px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 10px; height: 36px;
+  margin: 1px 6px;
+  border-radius: 8px;             /* ← slightly more rounded to match card feel */
+  cursor: pointer; text-decoration: none;
+  color: var(--text-mid); font-size: 13px; font-weight: 400;
+  transition: background 0.15s, color 0.15s;
+  overflow: hidden; white-space: nowrap;
+  position: relative;
+}
+.nav-item:hover { background: var(--surface3); color: var(--text); }
+.nav-item.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.nav-item.active .nav-icon { color: var(--accent); }
+
+.nav-icon {
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.nav-item:hover .nav-icon { color: var(--text-mid); }
+
+.nav-label {
+  flex: 1; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity var(--sidebar-transition);
+}
+body.collapsed .nav-label { opacity: 0; }
+
+.nav-badge {
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent); background: var(--accent-dim);
+  padding: 1px 6px; border-radius: 10px; flex-shrink: 0;
+  transition: opacity var(--sidebar-transition);
+}
+body.collapsed .nav-badge { opacity: 0; }
+
+/* Tooltip for collapsed */
+body.collapsed .nav-item[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(var(--sidebar-width-collapsed) + var(--gap) + 8px);
+  top: 50%; transform: translateY(-50%);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+/* ── SIDEBAR FOOTER ── */
+.sidebar-footer {
+  padding: 10px 8px;
+  overflow: hidden;
+}
+
+.sidebar-footer-inner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s;
+  white-space: nowrap;
+}
+.sidebar-footer-inner:hover { background: var(--surface3); }
+
+.footer-avatar {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: var(--accent);
+  flex-shrink: 0;
+}
+.footer-info { overflow: hidden; transition: opacity var(--sidebar-transition); }
+.footer-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.footer-role { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+body.collapsed .footer-info { opacity: 0; }
+
+/* ── MAIN INSET AREA ── */
+/* The "inset" variant: main area is itself a rounded card */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;            /* ← matches sidebar rounding */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+/* ── SITE HEADER ── */
+.site-header {
+  height: var(--header-height);
+  min-height: var(--header-height);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  gap: 8px; padding: 0 16px;
+  /* no background needed — inherits from main-area */
+}
+
+.sidebar-trigger {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; cursor: pointer;
+  color: var(--text-dim); background: transparent; border: none;
+  transition: background 0.15s, color 0.15s; flex-shrink: 0;
+}
+.sidebar-trigger:hover { background: var(--surface3); color: var(--text); }
+
+.header-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; flex: 1; min-width: 0; overflow: hidden;
+}
+.breadcrumb-item { color: var(--text-dim); white-space: nowrap; }
+.breadcrumb-item a { color: var(--text-dim); text-decoration: none; }
+.breadcrumb-item a:hover { color: var(--text-mid); }
+.breadcrumb-sep { color: var(--text-dim); font-size: 10px; }
+.breadcrumb-current { color: var(--text); font-weight: 500; }
+
+.header-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto; flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  padding: 0 12px; height: 30px;
+  border-radius: 6px; border: 1px solid var(--border);
+  cursor: pointer; white-space: nowrap; text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-ghost { background: transparent; color: var(--text-mid); }
+.btn-ghost:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+.btn-accent { background: var(--accent); color: #0d0d0f; border-color: var(--accent); font-weight: 600; }
+.btn-accent:hover { background: #2dd08e; }
+
+/* ── PAGE CONTENT ── */
+.page-content {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 24px 28px;
+  /* content area inside the rounded card — no extra bg needed */
+}
+
+/* ── MOCK CONTENT (identical to Variant A) ── */
+.page-title-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-title { font-size: 18px; font-weight: 600; color: var(--text); }
+.page-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+
+.filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px; margin-bottom: 14px;
+}
+.filter-select {
+  font-family: inherit; font-size: 12px;
+  background: var(--surface3); color: var(--text-mid);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 0 10px; height: 28px; cursor: pointer;
+}
+.filter-sep { width: 1px; height: 18px; background: var(--border); }
+.filter-count { font-size: 11px; color: var(--text-dim); margin-left: auto; font-family: 'IBM Plex Mono', monospace; }
+
+.product-table-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.product-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.product-table th {
+  padding: 10px 14px; text-align: left;
+  font-size: 10px; font-weight: 500; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  background: var(--surface3); border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.product-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  color: var(--text-mid); vertical-align: middle;
+}
+.product-table tr:last-child td { border-bottom: none; }
+.product-table tr:hover td { background: var(--surface3); }
+.species-name { color: var(--text); font-weight: 500; }
+.price-cell { color: var(--text); font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: 10px; font-weight: 500; padding: 2px 7px;
+  border-radius: 20px; white-space: nowrap;
+}
+.badge-body   { background: #3b1f6e; color: #c084fc; border: 1px solid #6d28d9; }
+.badge-neck   { background: #1e3a5f; color: #60a5fa; border: 1px solid #2563eb; }
+.badge-fret   { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+.badge-top    { background: #500724; color: #f9a8d4; border: 1px solid #be185d; }
+.freshness    { font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+.fresh        { color: #34d399; }
+.stale        { color: #f59e0b; }
+
+/* Label for variant */
+.variant-label {
+  position: fixed;
+  top: 18px; right: 22px;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 10px; border-radius: 20px;
+  pointer-events: none; z-index: 999;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="variant-label">Variant B · Inset</div>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-rail"></div>
+
+  <div class="sidebar-header">
+    <span class="brand-icon">🎸</span>
+    <div class="brand-text">
+      <div class="brand-name">Tonewood Finder</div>
+      <div class="brand-sub">v1.0 · 969 products</div>
+    </div>
+  </div>
+
+  <div class="sidebar-content">
+    <div class="nav-group">
+      <div class="nav-group-label">Main</div>
+
+      <a class="nav-item active" href="#" data-tooltip="Browse Woods" data-page="browse">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </span>
+        <span class="nav-label">Browse Woods</span>
+        <span class="nav-badge">969</span>
+      </a>
+
+      <a class="nav-item" href="#" data-tooltip="Build Planner" data-page="builds">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </span>
+        <span class="nav-label">Build Planner</span>
+      </a>
+
+      <a class="nav-item" href="#" data-tooltip="Fret Calculator" data-page="fret">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        </span>
+        <span class="nav-label">Fret Calculator</span>
+      </a>
+
+      <a class="nav-item" href="#" data-tooltip="Species Guide" data-page="species">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5"/></svg>
+        </span>
+        <span class="nav-label">Species Guide</span>
+      </a>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Manage</div>
+
+      <a class="nav-item" href="#" data-tooltip="Templates" data-page="templates">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="8" height="8" x="2" y="2" rx="2"/><rect width="8" height="8" x="14" y="2" rx="2"/><rect width="8" height="8" x="14" y="14" rx="2"/><rect width="8" height="8" x="2" y="14" rx="2"/></svg>
+        </span>
+        <span class="nav-label">Templates</span>
+      </a>
+
+      <a class="nav-item" href="#" data-tooltip="Vendors" data-page="vendors">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"/><path d="M12 3v6"/></svg>
+        </span>
+        <span class="nav-label">Vendors</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-inner">
+      <div class="footer-avatar">PB</div>
+      <div class="footer-info">
+        <div class="footer-name">Paulo</div>
+        <div class="footer-role">Luthier</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN AREA (INSET CARD) ════════════════════════════════ -->
+<div class="main-area">
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <button class="sidebar-trigger" id="trigger" title="Toggle sidebar (Ctrl+B)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+    </button>
+    <div class="header-sep"></div>
+    <nav class="breadcrumb">
+      <span class="breadcrumb-item"><a href="#">Tonewood Finder</a></span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current" id="breadcrumb-current">Browse Woods</span>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn-ghost">Import Data</button>
+      <button class="btn btn-accent">+ New Build</button>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <div class="page-content" id="page-content">
+
+    <div id="page-browse">
+      <div class="page-title-row">
+        <div>
+          <div class="page-title">Browse Woods</div>
+          <div class="page-sub">4 vendors · 103 species · 969 products</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <select class="filter-select"><option>All species</option><option>Mahogany</option><option>Maple</option><option>Ash</option></select>
+        <select class="filter-select"><option>All vendors</option><option>Sunda Byggvaror 🇸🇪</option><option>Guitars & Woods 🇵🇹</option></select>
+        <select class="filter-select"><option>All categories</option><option>Body Blank</option><option>Neck Blank</option><option>Fretboard Blank</option></select>
+        <select class="filter-select"><option>All formats</option></select>
+        <div class="filter-sep"></div>
+        <span class="filter-count">969 results</span>
+      </div>
+
+      <div class="product-table-wrap">
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th>Species</th><th>Vendor</th><th>Category</th><th>Format</th><th>Grade</th><th>Price</th><th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="species-name">Swamp Ash</span></td><td>Sunda Byggvaror 🇸🇪</td><td><span class="badge badge-body">Body Blank</span></td><td>2-pc · 45×370×540</td><td>AA</td><td class="price-cell">890 SEK</td><td class="freshness fresh">2026-02-14</td></tr>
+            <tr><td><span class="species-name">Hard Maple</span></td><td>Sunda Byggvaror 🇸🇪</td><td><span class="badge badge-neck">Neck Blank</span></td><td>28×70×640</td><td>AA</td><td class="price-cell">650 SEK</td><td class="freshness fresh">2026-02-14</td></tr>
+            <tr><td><span class="species-name">Ebony</span></td><td>Guitars & Woods 🇵🇹</td><td><span class="badge badge-fret">Fretboard Blank</span></td><td>8×80×510</td><td>AAA</td><td class="price-cell">420 SEK</td><td class="freshness fresh">2026-02-14</td></tr>
+            <tr><td><span class="species-name">Sitka Spruce</span></td><td>Forest Guitar Supplies 🇪🇸</td><td><span class="badge badge-top">Top Blank</span></td><td>2-pc · bookmatched</td><td>Master</td><td class="price-cell">1 240 SEK</td><td class="freshness stale">2025-11-03</td></tr>
+            <tr><td><span class="species-name">Mahogany</span></td><td>Rivolta 🇮🇹</td><td><span class="badge badge-body">Body Blank</span></td><td>1-pc · 45×350×500</td><td>A</td><td class="price-cell">540 SEK</td><td class="freshness stale">2025-10-18</td></tr>
+            <tr><td><span class="species-name">Pau Ferro</span></td><td>Guitars & Woods 🇵🇹</td><td><span class="badge badge-fret">Fretboard Blank</span></td><td>6×75×500</td><td>AA</td><td class="price-cell">185 SEK</td><td class="freshness fresh">2026-02-14</td></tr>
+            <tr><td><span class="species-name">Wenge</span></td><td>Sunda Byggvaror 🇸🇪</td><td><span class="badge badge-neck">Neck Blank</span></td><td>28×75×640</td><td>A</td><td class="price-cell">720 SEK</td><td class="freshness fresh">2026-01-30</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-builds" style="display:none">
+      <div class="page-title-row">
+        <div><div class="page-title">Build Planner</div><div class="page-sub">2 active builds</div></div>
+        <a href="#" class="btn btn-accent">+ New Build</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
+        <div style="background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">Ash Jazz Project</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:14px;font-family:'IBM Plex Mono',monospace;">Jazz Bass · 4-string 34"</div>
+          <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:12px;overflow:hidden;"><div style="height:100%;width:100%;background:var(--accent);border-radius:2px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;"><span style="color:var(--accent);">3/3 parts</span><span style="color:var(--text);">1 960 SEK</span><span>2026-01-15</span></div>
+        </div>
+        <div style="background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">Test Build</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:14px;font-family:'IBM Plex Mono',monospace;">Jazz Bass · 4-string 34"</div>
+          <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:12px;overflow:hidden;"><div style="height:100%;width:0%;background:var(--accent);border-radius:2px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;"><span>0/3 parts</span><span>—</span><span>2026-02-19</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-fret" style="display:none">
+      <div class="page-title-row"><div><div class="page-title">Fret Calculator</div><div class="page-sub">Scale length · fret placement tables</div></div></div>
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">Coming soon</div>
+    </div>
+    <div id="page-species" style="display:none">
+      <div class="page-title-row"><div><div class="page-title">Species Guide</div><div class="page-sub">103 species · botanical names · CITES status</div></div></div>
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">Coming soon</div>
+    </div>
+    <div id="page-templates" style="display:none">
+      <div class="page-title-row"><div><div class="page-title">Instrument Templates</div><div class="page-sub">Jazz Bass · P-Bass · Stingray · Spector NS</div></div></div>
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">Template editor</div>
+    </div>
+    <div id="page-vendors" style="display:none">
+      <div class="page-title-row"><div><div class="page-title">Vendors</div><div class="page-sub">4 active suppliers</div></div></div>
+      <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">Vendor management</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const body = document.body;
+const trigger = document.getElementById('trigger');
+const STORAGE_KEY = 'sidebar_state_b';
+
+if (localStorage.getItem(STORAGE_KEY) === 'collapsed') body.classList.add('collapsed');
+
+trigger.addEventListener('click', () => {
+  body.classList.toggle('collapsed');
+  localStorage.setItem(STORAGE_KEY, body.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); trigger.click(); }
+});
+
+const pages = ['browse','builds','fret','species','templates','vendors'];
+const breadcrumbs = { browse:'Browse Woods', builds:'Build Planner', fret:'Fret Calculator', species:'Species Guide', templates:'Templates', vendors:'Vendors' };
+
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', e => {
+    e.preventDefault();
+    const page = item.dataset.page;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('breadcrumb-current').textContent = breadcrumbs[page];
+    pages.forEach(p => {
+      const el = document.getElementById('page-' + p);
+      if (el) el.style.display = p === page ? 'block' : 'none';
+    });
+  });
+});
+</script>
+</body>
+</html>
