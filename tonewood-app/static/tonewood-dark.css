@@ -428,6 +428,11 @@ tr.detail-expand-row td.detail-expand-cell {
 [data-sidebar="collapsed"] .sidebar {
   width: var(--sidebar-width-collapsed);
   min-width: var(--sidebar-width-collapsed);
+  /* Delay overflow becoming visible until the width transition completes,
+     so labels don't bleed out during collapse animation.
+     Once fully collapsed, overflow: visible lets tooltip ::afters escape. */
+  overflow: visible;
+  transition: overflow 0s 220ms, width var(--sidebar-transition), min-width var(--sidebar-transition);
 }
 
 /* ── SIDEBAR RAIL ── */
@@ -570,9 +575,7 @@ tr.detail-expand-row td.detail-expand-cell {
 }
 [data-sidebar="collapsed"] .nav-badge { opacity: 0; }
 
-/* Tooltip — shown on collapsed icon hover.
-   Note: requires sidebar overflow:visible to escape sidebar bounds;
-   will be addressed in Phase 3 JS implementation. */
+/* Tooltip — shown on collapsed icon hover */
 [data-sidebar="collapsed"] .nav-item[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: fixed;
