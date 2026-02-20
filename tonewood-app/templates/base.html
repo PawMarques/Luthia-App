@@ -35,16 +35,6 @@
     <div class="nav-group">
       <div class="nav-group-label">Main</div>
 
-      <a class="nav-item{% if active_nav == 'browse' %} nav-item--active{% endif %}"
-         href="/browse" data-tooltip="Browse Woods">
-        <span class="nav-icon">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-        </span>
-        <span class="nav-label">Browse Woods</span>
-      </a>
-
       <a class="nav-item{% if active_nav == 'builds' %} nav-item--active{% endif %}"
          href="/builds" data-tooltip="Build Planner">
         <span class="nav-icon">
@@ -53,6 +43,16 @@
           </svg>
         </span>
         <span class="nav-label">Build Planner</span>
+      </a>
+
+      <a class="nav-item{% if active_nav == 'browse' %} nav-item--active{% endif %}"
+         href="/browse" data-tooltip="Browse Woods">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <span class="nav-label">Browse Woods</span>
       </a>
 
       <a class="nav-item{% if active_nav == 'fret' %} nav-item--active{% endif %}"

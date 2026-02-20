@@ -124,7 +124,7 @@ def browse():
             vendor_count=len(vendors),
             active_nav='browse',
             breadcrumb=[('Browse Woods', None)],
-            page_title='Tonewood Finder',
+            page_title='Luthia · Browse Woods',
         )
 
     except Exception as e:
@@ -655,7 +655,7 @@ def templates_index():
         cards_html=cards_html,
         active_nav='templates',
         breadcrumb=[('Templates', None)],
-        page_title='Templates · Tonewood Finder',
+        page_title='Luthia · Templates',
     )
 
 
@@ -831,7 +831,7 @@ def templates_edit(template_id):
         error_html=error_html,
         active_nav='templates',
         breadcrumb=[('Templates', '/templates'), (f'Edit {t.name}', None)],
-        page_title=f'Edit {t.name} · Tonewood Finder',
+        page_title=f'Luthia · Templates · Edit {t.name}',
     )
 
 
@@ -871,7 +871,7 @@ def builds_index():
         cards_html=cards_html,
         active_nav='builds',
         breadcrumb=[('Build Planner', None)],
-        page_title='Build Planner · Tonewood Finder',
+        page_title='Luthia · Build Planner',
     )
 
 
@@ -923,7 +923,7 @@ def builds_new():
         tpl_data=tpl_data,
         active_nav='builds',
         breadcrumb=[('Build Planner', '/builds'), ('New Build', None)],
-        page_title='New Build · Tonewood Finder',
+        page_title='Luthia · New Build',
     )
 
 
@@ -1016,7 +1016,7 @@ def builds_detail(build_id):
         case_warn=case_warn,
         active_nav='builds',
         breadcrumb=[('Build Planner', '/builds'), (build.name, None)],
-        page_title=f'{build.name} · Build Planner',
+        page_title=f'Luthia · Build · {build.name}',
     )
 
 
