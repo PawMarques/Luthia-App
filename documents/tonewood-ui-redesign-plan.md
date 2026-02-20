@@ -250,7 +250,7 @@ A right-side filter drawer (slide-in panel) is the ideal long-term pattern for m
 
 ## 9. Effort & Session Plan
 
-| Phase | Task | Complexity | Notes |
+| Phase | Task | Complexity | Notes |1
 |---|---|---|---|
 | 1 | Jinja2 infrastructure + convert all routes | Medium-High | Single session, single commit. Highest risk. |
 | 2 | `base.html` sidebar shell + CSS vars | Medium | Direct translation from approved prototype. |

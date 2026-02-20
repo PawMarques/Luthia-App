@@ -384,6 +384,7 @@ tr.detail-expand-row td.detail-expand-cell {
   height: 100%;
   background: #18181b;
   border-right: 1px solid #27272a;
+  border-top: 1px solid #27272a;
   display: flex;
   flex-direction: column;
   transition: width var(--sidebar-transition), min-width var(--sidebar-transition);
@@ -425,8 +426,8 @@ tr.detail-expand-row td.detail-expand-cell {
 
 /* ── SIDEBAR HEADER ── */
 .sidebar-header {
-  height: 56px;
-  min-height: 56px;
+  height: 47px;
+  min-height: 47px;
   display: flex;
   align-items: center;
   padding: 0 14px;
@@ -619,6 +620,7 @@ tr.detail-expand-row td.detail-expand-cell {
   height: var(--header-height);
   min-height: var(--header-height);
   background: #18181b;
+  border-top: 1px solid #27272a;
   border-bottom: 1px solid #27272a;
   display: flex;
   align-items: center;
@@ -680,7 +682,7 @@ tr.detail-expand-row td.detail-expand-cell {
    ═══════════════════════════════════════════════════════════════════ */
 
 .filter-bar {
-  background: #18181b;
+  background: #111113;
   border-bottom: 1px solid #27272a;
   padding: 12px 24px;
   display: flex;
