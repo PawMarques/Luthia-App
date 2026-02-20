@@ -707,3 +707,32 @@ tr.detail-expand-row td.detail-expand-cell {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER BAR — Phase 5
+   ═══════════════════════════════════════════════════════════════════ */
+
+.filter-bar {
+  background: #18181b;
+  border-bottom: 1px solid #27272a;
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.filter-bar-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-bar .filter-group {
+  min-width: 120px;
+  max-width: 200px;
+}

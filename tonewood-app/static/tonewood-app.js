@@ -63,7 +63,8 @@ function goToPage(p) {
   state.page = p;
   closeDetail();
   fetchAndRender();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const content = document.querySelector('.page-content');
+  if (content) content.scrollTop = 0;
 }
 
 function clearFilter(key) {
