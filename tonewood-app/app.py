@@ -611,8 +611,13 @@ def _candidate_products(role, variant):
         min_thickness = variant.neck_thickness_12f_mm
 
     elif role == 'fretboard':
+<<<<<<< HEAD
         # Fretboard length: fret 24 sits at scale × 0.75 from the nut; add 20mm overhang
         min_length    = (variant.scale_mm or 864) * 0.75 + 20
+=======
+        # Fretboard length ≈ scale length + small overhang
+        min_length    = (variant.scale_mm or 864) + 20
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
         min_width     = (variant.nut_width_mm or 38) + 10
         min_thickness = 6.0   # standard fretboard blank minimum
 
@@ -671,6 +676,7 @@ def _check_thickness_warning(build):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # /templates  — browse instrument templates and their reference dimensions
 # ---------------------------------------------------------------------------
 @app.route('/templates')
@@ -1003,6 +1009,8 @@ def templates_edit(template_id):
 
 
 # ---------------------------------------------------------------------------
+=======
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
 # /builds  — list all saved builds
 # ---------------------------------------------------------------------------
 @app.route('/builds')
@@ -1027,7 +1035,11 @@ def builds_index():
   <div class="build-progress-bar"><div class="build-progress-fill" style="width:{progress_pct}%"></div></div>
   <div class="build-card-meta">
     <span>{parts_done}/{parts_total} parts</span>
+<<<<<<< HEAD
     <span class="build-card-price">{price_str}</span>
+=======
+    <span>{price_str}</span>
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
     <span style="color:#3f3f46;">{updated}</span>
   </div>
 </a>"""
@@ -1369,10 +1381,14 @@ def builds_detail(build_id):
 <div id="picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;overflow-y:auto;">
   <div class="picker-modal">
     <div class="picker-header">
+<<<<<<< HEAD
       <div style="display:flex;flex-direction:column;gap:2px;">
         <span id="picker-title">Select product</span>
         <span id="picker-count" style="font-size:11px;font-weight:400;color:#71717a;"></span>
       </div>
+=======
+      <span id="picker-title">Select product</span>
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
       <button onclick="closePicker()" style="background:none;border:none;color:#71717a;font-size:18px;cursor:pointer;">✕</button>
     </div>
     <div id="picker-body" style="padding:12px 0;">Loading…</div>
@@ -1386,7 +1402,10 @@ function openPicker(role, partId) {{
   currentPartId = partId;
   document.getElementById('picker-title').textContent = 'Select ' + role.charAt(0).toUpperCase() + role.slice(1);
   document.getElementById('picker-overlay').style.display = 'block';
+<<<<<<< HEAD
   document.getElementById('picker-count').textContent = '';
+=======
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
   document.getElementById('picker-body').innerHTML = '<div style="padding:20px;color:#52525b;">Loading candidates…</div>';
 
   fetch(`/api/builds/{build_id}/candidates/${{role}}`)
@@ -1400,12 +1419,18 @@ function closePicker() {{
 
 function renderPicker(data, role, partId) {{
   if (!data.length) {{
+<<<<<<< HEAD
     document.getElementById('picker-count').textContent = '';
+=======
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
     document.getElementById('picker-body').innerHTML =
       '<div style="padding:20px;color:#52525b;">No matching products found in database.</div>';
     return;
   }}
+<<<<<<< HEAD
   document.getElementById('picker-count').textContent = data.length + ' match' + (data.length === 1 ? '' : 'es') + ' found';
+=======
+>>>>>>> f34535fb5350c3575380d213c0df14187d080934
   let html = '<div class="picker-list">';
   data.forEach(p => {{
     const warn  = p.dims_unverified ? '<span class="badge-unverified">dims unverified</span>' : '<span class="badge-verified">dims ✓</span>';
