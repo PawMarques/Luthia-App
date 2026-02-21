@@ -10,6 +10,11 @@
     /* Restore sidebar state before first paint — prevents collapsed→expanded flash */
     if (localStorage.getItem('tonewood-sidebar') === 'collapsed')
       document.documentElement.dataset.sidebar = 'collapsed';
+    /* Restore theme before first paint — prevents flash of default amber */
+    (function() {
+      var t = localStorage.getItem('luthia-theme') || 'amber';
+      document.documentElement.dataset.theme = t;
+    })();
   </script>
 </head>
 <body>
@@ -106,6 +111,18 @@
         <span class="nav-label">Vendors</span>
       </a>
 
+    </div>
+  </div>
+
+  <!-- Theme switcher -->
+  <div class="theme-switcher">
+    <span class="theme-switcher-label">Theme</span>
+    <div class="theme-swatches">
+      <button class="theme-swatch" data-theme="beeswax" style="--swatch-color:#f5c842" title="Beeswax" aria-label="Beeswax theme"></button>
+      <button class="theme-swatch" data-theme="amber"    style="--swatch-color:#e6a817" title="Amber"    aria-label="Amber theme"></button>
+      <button class="theme-swatch" data-theme="maple"    style="--swatch-color:#c97c2a" title="Maple"    aria-label="Maple theme"></button>
+      <button class="theme-swatch" data-theme="mahogany" style="--swatch-color:#b5622a" title="Mahogany" aria-label="Mahogany theme"></button>
+      <button class="theme-swatch" data-theme="spruce"   style="--swatch-color:#d4a574" title="Spruce"   aria-label="Spruce theme"></button>
     </div>
   </div>
 

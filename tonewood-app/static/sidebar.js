@@ -28,3 +28,35 @@
   });
 
 }());
+
+/* ── Theme switcher ─────────────────────────────────────────────────
+   Swaps data-theme on <html>. Persisted in localStorage under 'luthia-theme'.
+   Flash prevention handled by inline <head> script in base.html.
+   ──────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  var THEME_KEY     = 'luthia-theme';
+  var DEFAULT_THEME = 'amber';
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    document.querySelectorAll('.theme-swatch').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.theme === theme);
+    });
+  }
+
+  /* Set initial active state on swatches (theme already applied by head script) */
+  var current = localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
+  applyTheme(current);
+
+  /* Swatch click handlers */
+  document.querySelectorAll('.theme-swatch').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var theme = btn.dataset.theme;
+      localStorage.setItem(THEME_KEY, theme);
+      applyTheme(theme);
+    });
+  });
+
+}());
