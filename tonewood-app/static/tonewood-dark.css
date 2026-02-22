@@ -207,7 +207,6 @@ tr.detail-expand-row td.detail-expand-cell {
 .edit-btn:hover:not(:disabled) { color: #f4f4f5; border-color: #3b82f6; background: #1e293b; }
 
 /* Edit grid — editable columns get blue tint (handled by .detail-col-editable) */
-.edit-grid { }
 
 /* Inputs */
 .edit-input {
@@ -751,13 +750,14 @@ tr.detail-expand-row td.detail-expand-cell {
   white-space: nowrap;
 }
 
-.cat-body      { background: #3b1f6e; color: #c084fc; border-color: #6d28d9; }
-.cat-neck      { background: #1e3a5f; color: #60a5fa; border-color: #2563eb; }
-.cat-fretboard { background: #064e3b; color: #34d399; border-color: #059669; }
-.cat-top       { background: #500724; color: #f9a8d4; border-color: #be185d; }
-.cat-carpentry { background: #1c1c1e; color: #94a3b8; border-color: #334155; }
-.cat-finished  { background: #042f2e; color: #2dd4bf; border-color: #0d9488; }
-.cat-default   { background: #1c1c1e; color: #94a3b8; border-color: #334155; }
+/* Warm material palette — wood/craft vocabulary, distinct but harmonious */
+.cat-body      { background: #2a1f14; color: #c4956a; border-color: #6b3f1f; } /* Walnut  */
+.cat-neck      { background: #2a1218; color: #c47a88; border-color: #6b2535; } /* Rosewood */
+.cat-fretboard { background: #161616; color: #a0a0a0; border-color: #3a3a3a; } /* Ebony   */
+.cat-top       { background: #2a1a10; color: #c49060; border-color: #6b3818; } /* Cedar   */
+.cat-carpentry { background: #1a1c20; color: #8a9aaa; border-color: #2e3a46; } /* Ash     */
+.cat-finished  { background: #241e10; color: #b8a060; border-color: #5a4a1a; } /* Maple   */
+.cat-default   { background: #1e1e1e; color: #8a8a8a; border-color: #383838; }
 
 /* ═══════════════════════════════════════════════════════════════════
    THEME SWITCHER

@@ -636,7 +636,7 @@ def templates_index():
     <div style="display:flex;align-items:center;gap:10px;">
       {builds_note}
       <a href="/templates/{t.template_id}/edit" class="btn-sm">Edit</a>
-      <a href="/builds/new" class="btn-sm btn-primary">New Build</a>
+      <a href="/builds/new" class="btn-sm btn-sm--accent">New Build</a>
     </div>
   </div>
   {variants_html}
