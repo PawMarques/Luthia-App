@@ -735,6 +735,30 @@ tr.detail-expand-row td.detail-expand-cell {
   max-width: 200px;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY BADGES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cat-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid;
+  border-radius: 20px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.cat-body      { background: #3b1f6e; color: #c084fc; border-color: #6d28d9; }
+.cat-neck      { background: #1e3a5f; color: #60a5fa; border-color: #2563eb; }
+.cat-fretboard { background: #064e3b; color: #34d399; border-color: #059669; }
+.cat-top       { background: #500724; color: #f9a8d4; border-color: #be185d; }
+.cat-carpentry { background: #1c1c1e; color: #94a3b8; border-color: #334155; }
+.cat-finished  { background: #042f2e; color: #2dd4bf; border-color: #0d9488; }
+.cat-default   { background: #1c1c1e; color: #94a3b8; border-color: #334155; }
+
 /* ═══════════════════════════════════════════════════════════════════
    THEME SWITCHER
    ═══════════════════════════════════════════════════════════════════ */

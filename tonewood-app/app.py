@@ -30,14 +30,14 @@ with app.app_context():
 
 """ HOMEPAGE START """
 
-# Category badge styles (dark theme)
-CATEGORY_STYLES = {
-    'Body Blank':         {'bg': '#3b1f6e', 'text': '#c084fc', 'border': '#6d28d9'},
-    'Neck Blank':         {'bg': '#1e3a5f', 'text': '#60a5fa', 'border': '#2563eb'},
-    'Fretboard Blank':    {'bg': '#064e3b', 'text': '#34d399', 'border': '#059669'},
-    'Top Blank':          {'bg': '#500724', 'text': '#f9a8d4', 'border': '#be185d'},
-    'Carpentry lumber':   {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'},
-    'Finished Fretboard': {'bg': '#042f2e', 'text': '#2dd4bf', 'border': '#0d9488'},
+# Category badge CSS classes
+CATEGORY_CLASSES = {
+    'Body Blank':         'cat-body',
+    'Neck Blank':         'cat-neck',
+    'Fretboard Blank':    'cat-fretboard',
+    'Top Blank':          'cat-top',
+    'Carpentry lumber':   'cat-carpentry',
+    'Finished Fretboard': 'cat-finished',
 }
 
 VENDOR_FLAGS = {
@@ -48,10 +48,8 @@ VENDOR_FLAGS = {
 }
 
 def category_badge(name):
-    s = CATEGORY_STYLES.get(name, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
-    return (f'<span style="display:inline-flex;align-items:center;font-size:11px;font-weight:500;'
-            f'background:{s["bg"]};color:{s["text"]};border:1px solid {s["border"]};'
-            f'border-radius:20px;padding:2px 8px;white-space:nowrap;">{name}</span>')
+    cls = CATEGORY_CLASSES.get(name, 'cat-default')
+    return f'<span class="cat-badge {cls}">{name}</span>'
 
 def staleness_cell(last_updated):
     """Return an HTML table cell with colour-coded last updated date."""
@@ -189,7 +187,6 @@ def api_products():
         alias = listed if (listed and listed.lower() != display_name.lower()
                            and listed.lower() != p.species.scientific_name.lower()) else ''
         cat = p.category.name
-        s = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
         flag = VENDOR_FLAGS.get(p.vendor.country, '')
 
         # Staleness colour
@@ -207,9 +204,7 @@ def api_products():
             'vendor':      p.vendor.name,
             'vendor_flag': flag,
             'category':    cat,
-            'cat_bg':      s['bg'],
-            'cat_text':    s['text'],
-            'cat_border':  s['border'],
+            'cat_class':   CATEGORY_CLASSES.get(cat, 'cat-default'),
             'format':      p.format.name if p.format else '',
             'grade':       p.grade.name  if p.grade  else '',
             'price':       round(p.price, 2),
@@ -253,7 +248,6 @@ def api_product_detail(product_id):
     # Sibling listings removed
 
     cat = p.category.name
-    cs  = CATEGORY_STYLES.get(cat, {'bg': '#1c1c1e', 'text': '#94a3b8', 'border': '#334155'})
 
     return jsonify({
         'product_id':          p.product_id,
@@ -270,7 +264,7 @@ def api_product_detail(product_id):
         'stale_color':         stale_color,
         'dimensions':          _fmt_dims(p),
         'category':            cat,
-        'cat_bg':  cs['bg'], 'cat_text': cs['text'], 'cat_border': cs['border'],
+        'cat_class':           CATEGORY_CLASSES.get(cat, 'cat-default'),
         'format':              p.format.name if p.format else '',
         'grade':               p.grade.name  if p.grade  else '',
         'unit':                p.unit.name   if p.unit   else '',
@@ -770,7 +764,7 @@ def templates_edit(template_id):
     <div class="form-group">
       <label class="filter-label" style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" name="{p}has_top" value="1" {top_chk}
-               style="accent-color:#34d399;width:14px;height:14px;">
+               class="accent-checkbox" style="width:14px;height:14px;">
         Includes top blank
       </label>
     </div>
@@ -865,7 +859,7 @@ def builds_index():
   </div>
 </a>"""
     else:
-        cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" style="color:#34d399;">Create your first one!</a></p>'
+        cards_html = '<p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" class="accent-link">Create your first one!</a></p>'
 
     return render_template('builds/index.html',
         cards_html=cards_html,
@@ -989,7 +983,7 @@ def builds_detail(build_id):
   <div class="part-detail" style="color:#52525b;">No product selected</div>
   <div class="part-price">—</div>
   <div class="part-actions">
-    <button class="btn-primary btn-sm" onclick="openPicker('{part.role}', {part.part_id})">Select</button>
+    <button class="btn-select" onclick="openPicker('{part.role}', {part.part_id})">Select</button>
   </div>
 </div>"""
 

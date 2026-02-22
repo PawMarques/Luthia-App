@@ -190,7 +190,7 @@ function buildDetailHtml(d) {
     ? mkBadge('CITES Listed',     '#450a0a','#f87171','#dc2626')
     : mkBadge('Not CITES Listed', '#052e16','#34d399','#16a34a');
 
-  const catBadge = mkBadge(d.category, d.cat_bg, d.cat_text, d.cat_border);
+  const catBadge = `<span class="cat-badge ${esc(d.cat_class)}">${esc(d.category)}</span>`;
 
   const updHtml = d.stale_date
     ? `<span style="font-size:11px;color:${d.stale_color};">Updated ${esc(d.stale_date)}</span>`
@@ -592,9 +592,7 @@ function renderRows(rows) {
       ${p.alias ? `<div class="species-alias">listed as: ${esc(p.alias)}</div>` : ''}
     </td>
     <td class="vendor-name">${esc(p.vendor)} ${p.vendor_flag}</td>
-    <td><span style="display:inline-flex;align-items:center;font-size:11px;font-weight:500;
-      background:${p.cat_bg};color:${p.cat_text};border:1px solid ${p.cat_border};
-      border-radius:20px;padding:2px 8px;white-space:nowrap;">${esc(p.category)}</span></td>
+    <td><span class="cat-badge ${esc(p.cat_class)}">${esc(p.category)}</span></td>
     <td class="dim">${esc(p.format || '-')}</td>
     <td class="dim">${esc(p.grade  || '-')}</td>
     <td><span class="price-val">${p.price.toFixed(2)}</span><span class="price-cur">SEK</span></td>
