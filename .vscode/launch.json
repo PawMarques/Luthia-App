@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "tonewood-app/app.py",
+                "FLASK_APP": "luthia-app/app.py",
                 "FLASK_DEBUG": "1"
             },
             "args": [
