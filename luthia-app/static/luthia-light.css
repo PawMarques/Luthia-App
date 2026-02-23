@@ -1,0 +1,455 @@
+/*
+═══════════════════════════════════════════════════════════════════
+   LUTHIA LIGHT MODE
+   Version 1.0 · February 2026
+
+   HOW IT WORKS
+   ────────────────────────────────────────────────────────────────
+   This file layers on top of luthia-dark.css. When data-mode="light"
+   is set on <html>, every hardcoded dark color token is overridden.
+   The five-theme accent system (--accent, --accent-dim, --accent-text)
+   is re-tuned for light backgrounds but keeps the same variable names,
+   so all components that already use var(--accent) need zero changes.
+
+   LOAD ORDER in base.html:
+     <link rel="stylesheet" href="/static/luthia-dark.css">
+     <link rel="stylesheet" href="/static/luthia-light.css">
+
+   LIGHT PALETTE
+   ────────────────────────────────────────────────────────────────
+   Page bg         #f5f5f4   (warm stone-50)
+   Surface         #ffffff   (cards, sidebar, header)
+   Surface raised  #fafaf9   (table header, footer)
+   Border          #e7e5e4   (stone-200)
+   Border strong   #d6d3d1   (stone-300)
+   Text primary    #1c1917   (stone-900)
+   Text secondary  #78716c   (stone-500)
+   Text muted      #a8a29e   (stone-400)
+   Text disabled   #d6d3d1   (stone-300)
+═══════════════════════════════════════════════════════════════════
+*/
+
+/* ── LIGHT MODE VARIABLES & THEME ACCENTS ── */
+
+[data-mode="light"] {
+  --ui-bg:           #f5f5f4;
+  --ui-surface:      #ffffff;
+  --ui-surface-2:    #fafaf9;
+  --ui-surface-3:    #f0efee;
+  --ui-border:       #e7e5e4;
+  --ui-border-2:     #d6d3d1;
+  --ui-text-1:       #1c1917;
+  --ui-text-2:       #44403c;
+  --ui-text-3:       #78716c;
+  --ui-text-4:       #a8a29e;
+  --ui-text-5:       #d6d3d1;
+}
+
+/* Re-tune accent-dim for light backgrounds */
+[data-mode="light"],
+[data-mode="light"][data-theme="amber"]    { --accent:#c48b0a; --accent-dim:rgba(196,139,10,0.10);  --accent-text:#ffffff; }
+[data-mode="light"][data-theme="beeswax"] { --accent:#b89a00; --accent-dim:rgba(184,154,0,0.10);   --accent-text:#ffffff; }
+[data-mode="light"][data-theme="maple"]   { --accent:#a85e14; --accent-dim:rgba(168,94,20,0.10);   --accent-text:#ffffff; }
+[data-mode="light"][data-theme="mahogany"]{ --accent:#9a4118; --accent-dim:rgba(154,65,24,0.10);   --accent-text:#ffffff; }
+[data-mode="light"][data-theme="spruce"]  { --accent:#8c6440; --accent-dim:rgba(140,100,64,0.10);  --accent-text:#ffffff; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   BODY & RESET
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] body {
+  background: #f5f5f4;
+  color: #1c1917;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FILTER CONTROLS
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .filter-label { color: #78716c; }
+
+[data-mode="light"] .filter-select,
+[data-mode="light"] .filter-input {
+  background-color: #ffffff;
+  border-color: #d6d3d1;
+  color: #1c1917;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+[data-mode="light"] .filter-input { background-image: none; }
+
+[data-mode="light"] .filter-select:focus,
+[data-mode="light"] .filter-input:focus { border-color: #a8a29e; }
+
+[data-mode="light"] .filter-select option { background: #ffffff; color: #1c1917; }
+[data-mode="light"] .filter-select.has-value,
+[data-mode="light"] .filter-input.has-value  { border-color: #a8a29e; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   CHIPS
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .chip        { color: #44403c; background: #e7e5e4; border-color: #d6d3d1; }
+[data-mode="light"] .chip-x      { color: #a8a29e; }
+[data-mode="light"] .chip-x:hover { color: #1c1917; }
+[data-mode="light"] .chips-active { color: #44403c; background: #e7e5e4; border-color: #d6d3d1; }
+[data-mode="light"] .chips-clear  { color: #a8a29e; }
+[data-mode="light"] .chips-clear:hover { color: #44403c; }
+[data-mode="light"] .results-bar  { color: #a8a29e; }
+[data-mode="light"] .results-bar strong { color: #44403c; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   TABLE
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .table-wrap  { background: #ffffff; border-color: #e7e5e4; }
+
+[data-mode="light"] thead th {
+  background: #fafaf9;
+  border-bottom-color: #e7e5e4;
+  color: #a8a29e;
+}
+[data-mode="light"] thead th:hover,
+[data-mode="light"] thead th.sorted { color: #78716c; }
+
+[data-mode="light"] tbody tr         { border-bottom-color: #f0efee; }
+[data-mode="light"] tbody tr:hover   { background: #fafaf9; }
+
+[data-mode="light"] .species-name  { color: #1c1917; }
+[data-mode="light"] .species-alias { color: #a8a29e; }
+[data-mode="light"] .vendor-name   { color: #78716c; }
+[data-mode="light"] .dim           { color: #a8a29e; }
+[data-mode="light"] .price-val     { color: #1c1917; }
+[data-mode="light"] .price-cur     { color: #a8a29e; }
+
+[data-mode="light"] .view-link               { color: #a8a29e; border-color: #e7e5e4; }
+[data-mode="light"] .view-link:hover         { color: #1c1917; border-color: #a8a29e; }
+
+[data-mode="light"] .table-footer { border-top-color: #e7e5e4; background: #fafaf9; }
+[data-mode="light"] .footer-count { color: #a8a29e; }
+
+[data-mode="light"] .page-btn,
+[data-mode="light"] .page-num           { color: #78716c; background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .page-btn:hover,
+[data-mode="light"] .page-num:hover     { color: #1c1917; border-color: #a8a29e; }
+[data-mode="light"] .page-num.active    { background: #f0efee; color: #1c1917; border-color: #d6d3d1; }
+[data-mode="light"] .page-btn:disabled  { color: #d6d3d1; border-color: #e7e5e4; }
+[data-mode="light"] .page-ellipsis      { color: #d6d3d1; }
+[data-mode="light"] .no-results         { color: #a8a29e; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   SHIMMER
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .shimmer {
+  background: linear-gradient(90deg, #f0efee 25%, #e7e5e4 50%, #f0efee 75%);
+  background-size: 200% 100%;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   CLICKABLE ROWS & DETAIL EXPANSION
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] tbody tr.data-row:hover  { background: #fafaf9; }
+[data-mode="light"] tbody tr.data-row.active-row {
+  background: #eff6ff !important;
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+[data-mode="light"] tr.detail-expand-row td.detail-expand-cell {
+  background: #f5f5f4;
+  border-bottom-color: #3b82f6;
+}
+
+[data-mode="light"] .detail-species-h { color: #1c1917; }
+[data-mode="light"] .detail-sci-h     { color: #a8a29e; }
+[data-mode="light"] .detail-price-num { color: #1c1917; }
+[data-mode="light"] .detail-price-cur { color: #78716c; }
+[data-mode="light"] .detail-price-unit { color: #a8a29e; }
+[data-mode="light"] .detail-vendor-name    { color: #44403c; }
+[data-mode="light"] .detail-vendor-country { color: #a8a29e; }
+
+[data-mode="light"] .detail-grid     { border-color: #e7e5e4; }
+[data-mode="light"] .detail-col-gap  { background: #f0efee; border-right-color: #e7e5e4; }
+[data-mode="light"] .detail-col      { background: #ffffff; border-right-color: #e7e5e4; }
+[data-mode="light"] .detail-col-editable  { background: #ffffff; }
+[data-mode="light"] .edit-grid .detail-col-editable { background: #eff6ff; }
+[data-mode="light"] .detail-col-readonly  { background: #fafaf9; }
+[data-mode="light"] .detail-col-hd   { color: #a8a29e; }
+[data-mode="light"] .edit-col-tag    { color: #3b82f6; background: #eff6ff; border-color: #bfdbfe; }
+[data-mode="light"] .df-lbl          { color: #a8a29e; }
+[data-mode="light"] .df-val          { color: #44403c; }
+[data-mode="light"] .df-miss         { color: #d6d3d1; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   EDIT MODE
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .edit-btn          { color: #78716c; background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .edit-btn:hover:not(:disabled) { color: #1c1917; border-color: #3b82f6; background: #eff6ff; }
+
+[data-mode="light"] .edit-input        { background: #fafaf9; border-color: #d6d3d1; color: #1c1917; }
+[data-mode="light"] .edit-input:focus  { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.12); }
+
+[data-mode="light"] .edit-toggle-track { background: #e7e5e4; border-color: #d6d3d1; }
+[data-mode="light"] .edit-toggle input:checked ~ .edit-toggle-track { background: #16a34a; border-color: #16a34a; }
+[data-mode="light"] .edit-toggle-thumb  { background: #ffffff; }
+[data-mode="light"] .edit-toggle-label  { color: #78716c; }
+[data-mode="light"] .edit-note          { color: #d6d3d1; }
+
+[data-mode="light"] .edit-cancel-btn  { color: #78716c; background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .edit-cancel-btn:hover { color: #1c1917; border-color: #a8a29e; }
+[data-mode="light"] .edit-error       { color: #dc2626; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGES
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .img-thumb-wrap          { border-color: #e7e5e4; background: #fafaf9; }
+[data-mode="light"] .img-thumb-wrap:hover    { border-color: #a8a29e; }
+[data-mode="light"] .img-thumb-wrap.img-error { border-color: #dc2626; }
+[data-mode="light"] .img-thumb-wrap.img-error::after { color: #dc2626; background: #fff5f5; }
+
+[data-mode="light"] .img-caption     { color: #a8a29e; background: #fafaf9; border-top-color: #e7e5e4; }
+
+[data-mode="light"] .img-delete-btn  { background: rgba(255,255,255,0.85); border-color: #a8a29e; color: #dc2626; }
+[data-mode="light"] .img-delete-btn:hover { background: #fff5f5; border-color: #dc2626; }
+
+[data-mode="light"] .img-upload-area         { border-color: #d6d3d1; background: #fafaf9; }
+[data-mode="light"] .img-upload-area:hover,
+[data-mode="light"] .img-upload-area.drag-over { border-color: #3b82f6; background: #eff6ff; }
+[data-mode="light"] .img-upload-hint { color: #a8a29e; }
+
+[data-mode="light"] .img-url-btn      { color: #78716c; background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .img-url-btn:hover { color: #1c1917; border-color: #a8a29e; }
+[data-mode="light"] .img-upload-error { color: #dc2626; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .lightbox-bg    { background: rgba(28,25,23,0.75); }
+[data-mode="light"] .lightbox-close { background: rgba(255,255,255,0.9); border-color: #d6d3d1; color: #1c1917; }
+[data-mode="light"] .lightbox-close:hover { background: #ffffff; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .sidebar               { background: #ffffff; border-right-color: #e7e5e4; border-top-color: #e7e5e4; }
+[data-mode="light"] .sidebar-rail::after   { background: #d6d3d1; }
+[data-mode="light"] .sidebar-header        { border-bottom-color: #e7e5e4; }
+[data-mode="light"] .brand-name            { color: var(--accent); }
+[data-mode="light"] .brand-sub             { color: #a8a29e; }
+[data-mode="light"] .nav-group-label       { color: #a8a29e; }
+[data-mode="light"] .nav-divider           { background: #e7e5e4; }
+
+[data-mode="light"] .nav-item              { color: #78716c; }
+[data-mode="light"] .nav-item:hover        { background: #f5f5f4; color: #1c1917; }
+[data-mode="light"] .nav-item.nav-item--active { background: var(--accent-dim); color: var(--accent); }
+[data-mode="light"] .nav-item.nav-item--active .nav-icon { color: var(--accent); }
+[data-mode="light"] .nav-icon              { color: #d6d3d1; }
+[data-mode="light"] .nav-item:hover .nav-icon { color: #78716c; }
+
+[data-sidebar="collapsed"] [data-mode="light"] .nav-item[data-tooltip]:hover::after {
+  background: #ffffff;
+  border-color: #e7e5e4;
+  color: #1c1917;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+[data-mode="light"] .sidebar-footer        { border-top-color: #e7e5e4; }
+[data-mode="light"] .sidebar-footer-inner:hover { background: #f5f5f4; }
+[data-mode="light"] .footer-name           { color: #1c1917; }
+[data-mode="light"] .footer-role           { color: #a8a29e; }
+
+
+/* ── MAIN AREA ── */
+
+[data-mode="light"] .main-area  { background: #f5f5f4; }
+
+
+/* ── SITE HEADER ── */
+
+[data-mode="light"] .site-header          { background: #ffffff; border-top-color: #e7e5e4; border-bottom-color: #e7e5e4; }
+[data-mode="light"] .sidebar-trigger      { color: #a8a29e; }
+[data-mode="light"] .sidebar-trigger:hover { background: #f5f5f4; color: #1c1917; }
+[data-mode="light"] .header-sep           { background: #e7e5e4; }
+[data-mode="light"] .breadcrumb-item      { color: #a8a29e; }
+[data-mode="light"] .breadcrumb-item a    { color: #a8a29e; }
+[data-mode="light"] .breadcrumb-item a:hover { color: #78716c; }
+[data-mode="light"] .breadcrumb-sep       { color: #a8a29e; }
+[data-mode="light"] .breadcrumb-current   { color: #1c1917; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   FILTER BAR
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .filter-bar { background: #ffffff; border-bottom-color: #e7e5e4; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY BADGES
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .cat-body      { background: #fdf3ea; color: #8b5a2b; border-color: #d4a06a; }
+[data-mode="light"] .cat-neck      { background: #fdf0f3; color: #8b3a4f; border-color: #d48090; }
+[data-mode="light"] .cat-fretboard { background: #f5f5f5; color: #4a4a4a; border-color: #c0c0c0; }
+[data-mode="light"] .cat-top       { background: #fef5ec; color: #8b5230; border-color: #d49060; }
+[data-mode="light"] .cat-carpentry { background: #f0f4f8; color: #3a5a6a; border-color: #9ab0c0; }
+[data-mode="light"] .cat-finished  { background: #fdf8ea; color: #7a6020; border-color: #c8a840; }
+[data-mode="light"] .cat-default   { background: #f5f5f5; color: #5a5a5a; border-color: #c0c0c0; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   THEME SWITCHER
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .theme-switcher       { border-top-color: #e7e5e4; }
+[data-mode="light"] .theme-switcher-label { color: #a8a29e; }
+[data-mode="light"] .theme-swatch.active  { border-color: #1c1917; box-shadow: 0 0 0 1px rgba(0,0,0,0.10); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   MODE TOGGLE BUTTON
+   Placed inside .theme-switcher in base.html.
+   JS toggles data-mode on <html>; CSS swaps sun ↔ moon icon.
+══════════════════════════════════════════════════════════════ */
+
+.mode-toggle {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #52525b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.mode-toggle:hover {
+  background: #27272a;
+  color: #f4f4f5;
+  border-color: #3f3f46;
+}
+[data-mode="light"] .mode-toggle       { color: #a8a29e; }
+[data-mode="light"] .mode-toggle:hover { background: #f0efee; color: #44403c; border-color: #d6d3d1; }
+
+/* Icon swap */
+.mode-toggle .icon-sun  { display: none; }
+.mode-toggle .icon-moon { display: block; }
+[data-mode="light"] .mode-toggle .icon-sun  { display: block; }
+[data-mode="light"] .mode-toggle .icon-moon { display: none; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] ::-webkit-scrollbar-thumb       { background: #d6d3d1; }
+[data-mode="light"] ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   BUILDS.CSS OVERRIDES
+   builds.css is loaded after luthia-light.css via {% block extra_css %}.
+   [data-mode="light"] selectors (specificity 0-2-0) beat plain
+   class selectors (0-1-0) from builds.css, so these win correctly.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Page chrome ── */
+[data-mode="light"] .section-label  { color: #a8a29e; }
+[data-mode="light"] .page-title     { color: #1c1917; }
+[data-mode="light"] .page-title-sub { color: #a8a29e; }
+
+/* ── Buttons ── */
+[data-mode="light"] .btn-primary       { color: #1c1917; background: #e7e5e4; border-color: #d6d3d1; }
+[data-mode="light"] .btn-primary:hover { background: #d6d3d1; border-color: #a8a29e; }
+[data-mode="light"] .btn-sm            { color: #78716c; background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .btn-sm:hover      { color: #1c1917; border-color: #a8a29e; }
+
+/* ── Build cards ── */
+[data-mode="light"] .build-card          { background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .build-card:hover    { background: #fafaf9; border-color: #d6d3d1; }
+[data-mode="light"] .build-card-title    { color: #1c1917; }
+[data-mode="light"] .build-card-sub      { color: #a8a29e; }
+[data-mode="light"] .build-progress-bar  { background: #e7e5e4; }
+[data-mode="light"] .build-card-meta     { color: #a8a29e; }
+[data-mode="light"] .build-card-price    { color: #1c1917; }
+
+/* ── Form card ── */
+[data-mode="light"] .form-card { background: #ffffff; border-color: #e7e5e4; }
+
+/* Variant info box has inline styles — !important required */
+[data-mode="light"] #variant-info {
+  background: #fafaf9 !important;
+  border-color: #e7e5e4 !important;
+  color: #44403c !important;
+}
+
+/* ── Parts list ── */
+[data-mode="light"] .parts-list        { background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .part-row          { border-bottom-color: #f0efee; }
+[data-mode="light"] .part-row:hover    { background: #fafaf9; }
+[data-mode="light"] .part-role         { color: #78716c; }
+[data-mode="light"] .part-species      { color: #1c1917; }
+[data-mode="light"] .part-meta         { color: #a8a29e; }
+[data-mode="light"] .part-price        { color: #1c1917; }
+
+/* ── Total bar ── */
+[data-mode="light"] .total-bar   { background: #ffffff; border-color: #e7e5e4; color: #78716c; }
+[data-mode="light"] .total-price { color: #1c1917; }
+
+/* ── Reference panel ── */
+[data-mode="light"] .ref-panel                   { background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .ref-row                     { border-bottom-color: #f0efee; color: #78716c; }
+[data-mode="light"] .ref-row span:last-child      { color: #44403c; }
+[data-mode="light"] .ref-section                  { background: #fafaf9; color: #a8a29e; }
+[data-mode="light"] .ref-section span:last-child  { color: #a8a29e; }
+
+/* ── Picker modal ── */
+[data-mode="light"] .picker-modal        { background: #ffffff; border-color: #e7e5e4; box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
+[data-mode="light"] .picker-header       { border-bottom-color: #e7e5e4; color: #1c1917; }
+[data-mode="light"] .picker-row          { border-bottom-color: #f0efee; }
+[data-mode="light"] .picker-row:hover    { background: #fafaf9; }
+[data-mode="light"] .picker-species      { color: #1c1917; }
+[data-mode="light"] .picker-meta         { color: #a8a29e; }
+[data-mode="light"] .picker-price        { color: #1c1917; }
+[data-mode="light"] .picker-grade        { color: #78716c; background: #f0efee; border-color: #e7e5e4; }
+
+/* ── Badges ── */
+[data-mode="light"] .badge-grade { color: #78716c; background: #f0efee; border-color: #e7e5e4; }
+
+/* ── Template cards ── */
+[data-mode="light"] .tpl-card                    { background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .tpl-card-header             { border-bottom-color: #e7e5e4; }
+[data-mode="light"] .tpl-card-title              { color: #1c1917; }
+[data-mode="light"] .tpl-card-type               { color: #a8a29e; }
+[data-mode="light"] .tpl-variant                 { border-bottom-color: #f0efee; }
+[data-mode="light"] .tpl-variant-label           { color: #78716c; }
+[data-mode="light"] .tpl-construction-badge      { color: #78716c; background: #f0efee; border-color: #e7e5e4; }
+[data-mode="light"] .tpl-builds-count            { color: #a8a29e; }
+[data-mode="light"] .tpl-dim-row span:first-child { color: #a8a29e; }
+[data-mode="light"] .tpl-dim-row span:last-child  { color: #44403c; }
+
+/* ── Template edit page ── */
+[data-mode="light"] .tpl-edit-variant       { background: #ffffff; border-color: #e7e5e4; }
+[data-mode="light"] .tpl-edit-variant-title { color: #78716c; }
+[data-mode="light"] .tpl-edit-section-label { color: #a8a29e; }

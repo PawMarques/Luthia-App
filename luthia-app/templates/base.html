@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ page_title }}{% endblock %}</title>
   <link rel="stylesheet" href="/static/luthia-dark.css">
+  <link rel="stylesheet" href="/static/luthia-light.css">
   {% block extra_css %}{% endblock %}
   <script>
     /* Restore sidebar state before first paint — prevents collapsed→expanded flash */
@@ -14,6 +15,11 @@
     (function() {
       var t = localStorage.getItem('luthia-theme') || 'amber';
       document.documentElement.dataset.theme = t;
+    })();
+    /* Restore light/dark mode before first paint — prevents flash of dark on light reload */
+    (function() {
+      var m = localStorage.getItem('luthia-mode') || 'dark';
+      document.documentElement.dataset.mode = m;
     })();
   </script>
 </head>
@@ -131,6 +137,18 @@
       <button class="theme-swatch" data-theme="mahogany" style="--swatch-color:#b5622a" title="Mahogany" aria-label="Mahogany theme"></button>
       <button class="theme-swatch" data-theme="spruce"   style="--swatch-color:#d4a574" title="Spruce"   aria-label="Spruce theme"></button>
     </div>
+    <button class="mode-toggle" id="mode-toggle" title="Toggle light/dark mode" aria-label="Switch to light mode">
+      <svg class="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1"  x2="12" y2="3"/>  <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22"  x2="5.64" y2="5.64"/>  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1"  y1="12" x2="3"  y2="12"/>  <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
   </div>
 
   <!-- Footer: user -->

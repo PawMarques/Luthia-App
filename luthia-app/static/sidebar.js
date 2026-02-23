@@ -60,3 +60,41 @@
   });
 
 }());
+
+/* ── Light / dark mode toggle ───────────────────────────────────────
+   Toggles data-mode="light|dark" on <html>.
+   Persisted in localStorage under 'luthia-mode'.
+   Flash prevention is handled by the inline <head> script in base.html.
+   ──────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  var MODE_KEY     = 'luthia-mode';
+  var DEFAULT_MODE = 'dark';
+
+  function applyMode(mode) {
+    document.documentElement.dataset.mode = mode;
+    localStorage.setItem(MODE_KEY, mode);
+    var btn = document.getElementById('mode-toggle');
+    if (btn) {
+      btn.setAttribute(
+        'aria-label',
+        mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
+      );
+    }
+  }
+
+  /* Wire up the toggle button */
+  var btn = document.getElementById('mode-toggle');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.dataset.mode === 'light' ? 'dark' : 'light';
+      applyMode(next);
+    });
+  }
+
+  /* Sync aria-label with the mode that was already applied by the head script */
+  var current = localStorage.getItem(MODE_KEY) || DEFAULT_MODE;
+  applyMode(current);
+
+}());
