@@ -8,6 +8,7 @@ Usage:
 """
 
 import os
+from typing import Optional
 
 from flask import Flask, redirect, url_for
 
@@ -18,11 +19,15 @@ from routes.images    import images_bp
 from routes.templates import templates_bp
 
 
-def create_app() -> Flask:
+def create_app(test_config: Optional[dict] = None) -> Flask:
     """Application factory.
 
     Isolated from module-level execution so test suites can instantiate the
     app without triggering side-effects like database creation.
+
+    Args:
+        test_config: Optional dict of config values that override the defaults.
+                     Pass TESTING=True and SQLALCHEMY_DATABASE_URI for test runs.
     """
     app = Flask(__name__)
 
@@ -31,6 +36,10 @@ def create_app() -> Flask:
     app.config['SQLALCHEMY_DATABASE_URI']  = f'sqlite:///{os.path.join(basedir, "luthia.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'product-images')
+
+    # Apply test overrides before makedirs and db.init_app so they take effect.
+    if test_config:
+        app.config.update(test_config)
 
     # Ensure the image upload directory exists on first run.
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
