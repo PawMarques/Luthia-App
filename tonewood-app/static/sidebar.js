@@ -1,12 +1,12 @@
 /* ── Sidebar collapse behaviour ────────────────────────────────────
    Toggle:  click #sidebar-trigger  or  Ctrl+B / Cmd+B
-   State:   stored in localStorage under 'tonewood-sidebar'
+   State:   stored in localStorage under 'luthia-sidebar'
    Restore: handled by the inline <head> script in base.html (flash prevention)
    ──────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'tonewood-sidebar';
+  var STORAGE_KEY = 'luthia-sidebar';
   var root        = document.documentElement;
 
   function toggle() {

@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ page_title }}{% endblock %}</title>
-  <link rel="stylesheet" href="/static/tonewood-dark.css">
+  <link rel="stylesheet" href="/static/luthia-dark.css">
   {% block extra_css %}{% endblock %}
   <script>
     /* Restore sidebar state before first paint — prevents collapsed→expanded flash */
-    if (localStorage.getItem('tonewood-sidebar') === 'collapsed')
+    if (localStorage.getItem('luthia-sidebar') === 'collapsed')
       document.documentElement.dataset.sidebar = 'collapsed';
     /* Restore theme before first paint — prevents flash of default amber */
     (function() {

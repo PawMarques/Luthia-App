@@ -1,8 +1,8 @@
 /* builds.css — Build Planner styles
-   Loaded after tonewood-dark.css on all /builds pages.
+   Loaded after luthia-dark.css on all /builds pages.
 */
 
-/* ── Build pages wrapper (replaces .main to avoid conflict with tonewood-dark.css) ── */
+/* ── Build pages wrapper (replaces .main to avoid conflict with luthia-dark.css) ── */
 .builds-wrap {
   max-width: 1400px;
   margin: 0 auto;
