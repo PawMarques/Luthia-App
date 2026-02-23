@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/instrument_templates.html' import template_card %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/builds.css">
@@ -10,7 +11,11 @@
     <div class="page-title">Instrument Templates</div>
   </div>
   <div class="tpl-list">
-    {{ cards_html | safe }}
+    {% for t in templates %}
+      {{ template_card(t) }}
+    {% else %}
+      <p style="color:#52525b;text-align:center;padding:40px 0;">No templates found.</p>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

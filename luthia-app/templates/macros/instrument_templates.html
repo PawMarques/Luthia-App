@@ -1,0 +1,194 @@
+{# ============================================================================
+   Jinja2 macros for the Instrument Template domain.
+
+   template_card    — summary card shown on /templates index
+   variant_summary  — read-only dimension summary inside a template card
+   variant_edit     — dimension edit form block inside /templates/<id>/edit
+
+   Auto-escaping is active throughout.  No | safe usage — all values come
+   from the database or are hardcoded strings within this file.
+   ============================================================================ #}
+
+
+{# ---------------------------------------------------------------------------
+   template_card(t)
+
+   Renders the summary card for one InstrumentTemplate on the index page.
+   Internally calls variant_summary for each variant (sorted by strings then
+   scale_mm so the display order is stable and predictable).
+
+   Params
+   ------
+   t   InstrumentTemplate ORM object
+   --------------------------------------------------------------------------- #}
+{% macro template_card(t) %}
+{% set type_label    = t.instrument_type | capitalize if t.instrument_type else 'Instrument' %}
+{% set total_builds  = t.builds | length %}
+{% set variant_count = t.variants | length %}
+<div class="tpl-card">
+  <div class="tpl-card-header">
+    <div>
+      <div class="tpl-card-title">{{ t.name }}</div>
+      <div class="tpl-card-type">{{ type_label }} · {{ variant_count }} variant{{ 's' if variant_count != 1 else '' }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      {% if total_builds %}<span class="tpl-builds-count">{{ total_builds }} build{{ 's' if total_builds != 1 else '' }}</span>{% endif %}
+      <a href="/templates/{{ t.template_id }}/edit" class="btn-sm">Edit</a>
+      <a href="/builds/new" class="btn-sm btn-sm--accent">New Build</a>
+    </div>
+  </div>
+  {% for v in t.variants | sort(attribute='scale_mm') | sort(attribute='strings') %}
+    {{ variant_summary(v) }}
+  {% endfor %}
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   variant_summary(v)
+
+   Renders the read-only dimension summary row for one TemplateVariant inside
+   a template card.
+
+   Params
+   ------
+   v   TemplateVariant ORM object
+   --------------------------------------------------------------------------- #}
+{% macro variant_summary(v) %}
+{% set construction_label = v.construction.replace('-', ' ').title() if v.construction else '—' %}
+<div class="tpl-variant">
+  <div class="tpl-variant-header">
+    <div>
+      <span class="tpl-variant-label">{{ v.label }}</span>{% if v.has_top %} <span class="badge-grade">+ Top</span>{% endif %}
+      <span class="tpl-construction-badge">{{ construction_label }}</span>
+    </div>
+  </div>
+  <div class="tpl-dims">
+    <div class="tpl-dim-row tpl-dim-scale">
+      <span>Scale</span><span>{{ "%.1f" | format(v.scale_mm) }} mm ({{ v.strings }}-string)</span>
+    </div>
+    {% if v.body_length_mm %}
+    <div class="tpl-dim-row"><span>Body blank</span><span>{{ "%.0f" | format(v.body_length_mm) }} × {{ "%.0f" | format(v.body_width_mm) }} × {{ "%.0f" | format(v.body_thickness_mm) }} mm</span></div>
+    {% endif %}
+    {% if v.neck_length_mm or v.neck_length_thru_mm %}
+    {% set neck_len   = v.neck_length_thru_mm if v.construction == 'neck-through' else v.neck_length_mm %}
+    {% set neck_label = 'Neck blank (thru)' if v.construction == 'neck-through' else 'Neck blank' %}
+    <div class="tpl-dim-row"><span>{{ neck_label }}</span><span>{{ "%.0f" | format(neck_len) }} mm</span></div>
+    {% endif %}
+    {% if v.nut_width_mm %}
+    <div class="tpl-dim-row"><span>Nut width</span><span>{{ "%.1f" | format(v.nut_width_mm) }} mm</span></div>
+    {% endif %}
+    {% if v.overall_length_mm %}
+    <div class="tpl-dim-row"><span>Overall length</span><span>{{ "%.0f" | format(v.overall_length_mm) }} mm</span></div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   variant_edit(v)
+
+   Renders the full dimension edit form block for one TemplateVariant inside
+   the /templates/<id>/edit page.  All input name attributes use the prefix
+   v<variant_id>_ so the POST handler can identify each variant's fields.
+
+   Params
+   ------
+   v   TemplateVariant ORM object
+   --------------------------------------------------------------------------- #}
+{% macro variant_edit(v) %}
+{% set prefix = 'v' ~ v.variant_id ~ '_' %}
+<div class="tpl-edit-variant">
+  <div class="tpl-edit-variant-title">Variant — {{ v.label }}</div>
+
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Label</label>
+      <input type="text" name="{{ prefix }}label" class="filter-input" value="{{ v.label }}" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Strings</label>
+      <input type="number" name="{{ prefix }}strings" class="filter-input" value="{{ v.strings }}" min="1" max="12" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Scale (mm)</label>
+      <input type="number" name="{{ prefix }}scale_mm" class="filter-input" value="{{ v.scale_mm if v.scale_mm is not none else '' }}" step="0.1" required>
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Construction</label>
+      <select name="{{ prefix }}construction" class="filter-select">
+        <option value="bolt-on" {% if v.construction == 'bolt-on' %}selected{% endif %}>Bolt-on</option>
+        <option value="neck-through" {% if v.construction == 'neck-through' %}selected{% endif %}>Neck-through</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Body Blank</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Length (mm)</label>
+      <input type="number" name="{{ prefix }}body_length_mm" class="filter-input" value="{{ v.body_length_mm if v.body_length_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Width (mm)</label>
+      <input type="number" name="{{ prefix }}body_width_mm" class="filter-input" value="{{ v.body_width_mm if v.body_width_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness (mm)</label>
+      <input type="number" name="{{ prefix }}body_thickness_mm" class="filter-input" value="{{ v.body_thickness_mm if v.body_thickness_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" name="{{ prefix }}has_top" value="1" {% if v.has_top %}checked{% endif %}
+               class="accent-checkbox" style="width:14px;height:14px;">
+        Includes top blank
+      </label>
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Neck Blank</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Length bolt-on (mm)</label>
+      <input type="number" name="{{ prefix }}neck_length_mm" class="filter-input" value="{{ v.neck_length_mm if v.neck_length_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Length neck-thru (mm)</label>
+      <input type="number" name="{{ prefix }}neck_length_thru_mm" class="filter-input" value="{{ v.neck_length_thru_mm if v.neck_length_thru_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Nut width (mm)</label>
+      <input type="number" name="{{ prefix }}nut_width_mm" class="filter-input" value="{{ v.nut_width_mm if v.nut_width_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Width at heel (mm)</label>
+      <input type="number" name="{{ prefix }}neck_width_heel_mm" class="filter-input" value="{{ v.neck_width_heel_mm if v.neck_width_heel_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness at 1st fret (mm)</label>
+      <input type="number" name="{{ prefix }}neck_thickness_1f_mm" class="filter-input" value="{{ v.neck_thickness_1f_mm if v.neck_thickness_1f_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Thickness at 12th fret (mm)</label>
+      <input type="number" name="{{ prefix }}neck_thickness_12f_mm" class="filter-input" value="{{ v.neck_thickness_12f_mm if v.neck_thickness_12f_mm is not none else '' }}" step="0.1">
+    </div>
+  </div>
+
+  <div class="tpl-edit-section-label">Headstock &amp; Overall</div>
+  <div class="tpl-edit-grid">
+    <div class="form-group">
+      <label class="filter-label">Headstock length (mm)</label>
+      <input type="number" name="{{ prefix }}headstock_length_mm" class="filter-input" value="{{ v.headstock_length_mm if v.headstock_length_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Headstock width (mm)</label>
+      <input type="number" name="{{ prefix }}headstock_width_mm" class="filter-input" value="{{ v.headstock_width_mm if v.headstock_width_mm is not none else '' }}" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="filter-label">Overall length (mm)</label>
+      <input type="number" name="{{ prefix }}overall_length_mm" class="filter-input" value="{{ v.overall_length_mm if v.overall_length_mm is not none else '' }}" step="0.1">
+    </div>
+  </div>
+</div>
+{% endmacro %}

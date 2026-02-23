@@ -1,0 +1,104 @@
+{# ============================================================================
+   Jinja2 macros for the Build Planner domain.
+
+   build_card        — summary card shown on /builds index
+   part_row_assigned — part row where a product has been chosen
+   part_row_empty    — part row where no product has been chosen yet
+
+   Auto-escaping is active throughout; | safe is used only on hardcoded
+   emoji constants that are provably not user/DB data.
+   ============================================================================ #}
+
+
+{# ---------------------------------------------------------------------------
+   build_card(build, parts_done, parts_total, progress_pct)
+
+   Renders the clickable summary card for one build on the index page.
+
+   Params
+   ------
+   build         Build ORM object (provides name, template, variant, parts,
+                 total_price, updated_at, build_id)
+   parts_done    int — number of parts with a product assigned
+   parts_total   int — total number of part slots in this build
+   progress_pct  int — (parts_done / parts_total * 100), pre-computed by caller
+   --------------------------------------------------------------------------- #}
+{% macro build_card(build, parts_done, parts_total, progress_pct) %}
+<a href="/builds/{{ build.build_id }}" class="build-card">
+  <div class="build-card-title">{{ build.name }}{% if build.parts | selectattr('thickness_warning') | list %} <span title="Thickness warning" style="color:#f59e0b;">⚠</span>{% endif %}</div>
+  <div class="build-card-sub">{{ build.template.name }} · {{ build.variant.label }}</div>
+  <div class="build-progress-bar"><div class="build-progress-fill" style="width:{{ progress_pct }}%"></div></div>
+  <div class="build-card-meta">
+    <span>{{ parts_done }}/{{ parts_total }} parts</span>
+    <span class="build-card-price">{% if build.total_price %}{{ "{:,.0f}".format(build.total_price) }} SEK{% else %}—{% endif %}</span>
+    <span style="color:#3f3f46;">{% if build.updated_at %}{{ build.updated_at.strftime('%Y-%m-%d') }}{% endif %}</span>
+  </div>
+</a>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   part_row_assigned(part, product, role_icon)
+
+   Renders a part row that already has a product assigned.
+
+   Params
+   ------
+   part       BuildPart ORM object (role, part_id, thickness_warning,
+              dims_unverified)
+   product    Product ORM object (species, vendor, grade, price, product_url,
+              thickness_mm, width_mm, length_mm)
+   role_icon  str — emoji for this role (e.g. '🪵'), passed from route context
+   --------------------------------------------------------------------------- #}
+{% macro part_row_assigned(part, product, role_icon) %}
+{% set role_label = part.role | capitalize %}
+{% set species    = product.species.commercial_name or product.species.scientific_name %}
+{% set _flag_map  = {'Sweden': '🇸🇪', 'Portugal': '🇵🇹', 'Italy': '🇮🇹', 'Spain': '🇪🇸'} %}
+{% set flag       = _flag_map.get(product.vendor.country, '') if product.vendor.country else '' %}
+{% set ns = namespace(dims=[]) %}
+{% if product.thickness_mm %}{% set ns.dims = ns.dims + [(product.thickness_mm | round(0) | int) ~ 'mm thick'] %}{% endif %}
+{% if product.width_mm     %}{% set ns.dims = ns.dims + [(product.width_mm     | round(0) | int) ~ 'mm wide']  %}{% endif %}
+{% if product.length_mm    %}{% set ns.dims = ns.dims + [(product.length_mm    | round(0) | int) ~ 'mm long']  %}{% endif %}
+{% set dims_str = ns.dims | join(' · ') if ns.dims else 'dimensions not specified' %}
+<div class="part-row">
+  <div class="part-role">{{ role_icon }} {{ role_label }}</div>
+  <div class="part-detail">
+    <div class="part-species">{{ species }}{% if product.grade %} <span class="badge-grade">{{ product.grade.name }}</span>{% endif %}</div>
+    <div class="part-meta">{{ product.vendor.name }} {{ flag }} · {{ dims_str }}</div>
+    {% if part.thickness_warning %}
+    <div class="part-warning">⚠ Combined body + top thickness exceeds 45mm — body may need planing</div>
+    {% endif %}
+    {% if part.dims_unverified %}
+    <div class="part-notice">ℹ Dimensions not specified by vendor — verify suitability before ordering</div>
+    {% endif %}
+  </div>
+  <div class="part-price">{{ "{:,.0f}".format(product.price) }} <span style="color:#52525b;font-size:11px;">SEK</span></div>
+  <div class="part-actions">
+    {% if product.product_url %}<a href="{{ product.product_url }}" target="_blank" class="view-link" style="font-size:11px;">View ↗</a>{% endif %}
+    <button class="btn-sm" onclick="openPicker('{{ part.role }}', {{ part.part_id }})">Change</button>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   part_row_empty(part, role_icon)
+
+   Renders a part slot that has no product assigned yet.
+
+   Params
+   ------
+   part       BuildPart ORM object (role, part_id)
+   role_icon  str — emoji for this role
+   --------------------------------------------------------------------------- #}
+{% macro part_row_empty(part, role_icon) %}
+{% set role_label = part.role | capitalize %}
+<div class="part-row part-empty">
+  <div class="part-role">{{ role_icon }} {{ role_label }}</div>
+  <div class="part-detail" style="color:#52525b;">No product selected</div>
+  <div class="part-price">—</div>
+  <div class="part-actions">
+    <button class="btn-select" onclick="openPicker('{{ part.role }}', {{ part.part_id }})">Select</button>
+  </div>
+</div>
+{% endmacro %}

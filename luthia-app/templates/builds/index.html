@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/builds.html' import build_card %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/builds.css">
@@ -16,7 +17,14 @@
     <div class="page-title">Current builds</div>
   </div>
   <div class="builds-grid">
-    {{ cards_html | safe }}
+    {% for b in builds %}
+      {% set parts_done   = b.parts | selectattr('product_id') | list | length %}
+      {% set parts_total  = b.parts | length %}
+      {% set progress_pct = ((parts_done / parts_total) * 100) | int if parts_total else 0 %}
+      {{ build_card(b, parts_done, parts_total, progress_pct) }}
+    {% else %}
+      <p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" class="accent-link">Create your first one!</a></p>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

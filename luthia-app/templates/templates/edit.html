@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/instrument_templates.html' import variant_edit %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/builds.css">
@@ -9,7 +10,9 @@
   <div class="page-title-bar">
     <div class="page-title">Edit Template</div>
   </div>
-  {{ error_html | safe }}
+  {% if errors %}
+  <div class="tpl-edit-error">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+  {% endif %}
   <form method="POST">
     <div class="form-card" style="margin-bottom:16px;">
       <div class="tpl-edit-section-label" style="margin-top:0;">Template</div>
@@ -31,7 +34,9 @@
       </div>
     </div>
 
-    {{ variants_html | safe }}
+    {% for v in variants %}
+      {{ variant_edit(v) }}
+    {% endfor %}
 
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
       <a href="/templates" class="btn-primary">Cancel</a>

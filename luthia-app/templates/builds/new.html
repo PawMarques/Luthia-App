@@ -17,7 +17,10 @@
         <label class="filter-label">Instrument Template</label>
         <select name="template_id" id="tpl-select" class="filter-select"
                 onchange="onTplChange()" required>
-          {{ tpl_opts | safe }}
+          <option value="">Select instrument…</option>
+          {% for t in templates %}
+          <option value="{{ t.template_id }}">{{ t.name }}</option>
+          {% endfor %}
         </select>
       </div>
       <div class="form-group" id="variant-group" style="display:none;">

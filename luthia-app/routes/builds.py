@@ -34,14 +34,10 @@ _ROLE_ICONS = {'body': '🪵', 'neck': '🎸', 'fretboard': '📏', 'top': '✨'
 def builds_index():
     """Render the build planner index with a summary card for every saved build."""
     builds = Build.query.order_by(Build.updated_at.desc()).all()
-    cards_html = ''.join(_build_card_html(b) for b in builds) or (
-        '<p style="color:#52525b;text-align:center;padding:40px 0;">'
-        'No builds yet. <a href="/builds/new" class="accent-link">Create your first one!</a></p>'
-    )
 
     return render_template(
         'builds/index.html',
-        cards_html=cards_html,
+        builds=builds,
         active_nav='builds',
         breadcrumb=[('Build Planner', None)],
         page_title='Luthia · Build Planner',
@@ -92,14 +88,9 @@ def builds_new():
         for t in templates
     }
 
-    tpl_opts = '<option value="">Select instrument…</option>' + ''.join(
-        f'<option value="{t.template_id}">{t.name}</option>'
-        for t in templates
-    )
-
     return render_template(
         'builds/new.html',
-        tpl_opts=tpl_opts,
+        templates=templates,
         tpl_data=tpl_data,
         active_nav='builds',
         breadcrumb=[('Build Planner', '/builds'), ('New Build', None)],
@@ -113,7 +104,7 @@ def builds_detail(build_id):
     build   = Build.query.get_or_404(build_id)
     variant = build.variant
 
-    parts_html, total = _render_parts(build)
+    total = sum(p.product.price for p in build.parts if p.product_id and p.product)
 
     # Build the dimension reference panel shown alongside the part list.
     ref                = variant
@@ -129,29 +120,15 @@ def builds_detail(build_id):
         else f'Neck blank (nut→heel): {neck_len:.0f}mm'
     )
 
-    # Warn when the instrument may not fit a standard hard case.
-    case_warn = ''
-    if ref.overall_length_mm and ref.overall_length_mm > 1250:
-        case_warn += (
-            ' <span style="color:#f59e0b;" '
-            'title="Exceeds standard case length of 1250mm">⚠</span>'
-        )
-    if ref.body_width_mm and ref.body_width_mm > 380:
-        case_warn += (
-            ' <span style="color:#f59e0b;" '
-            'title="Exceeds standard case width of 380mm">⚠</span>'
-        )
-
     return render_template(
         'builds/detail.html',
         build=build,
         variant=variant,
-        parts_html=parts_html,
         total_str=f'{total:,.0f}',
         ref=ref,
         construction_label=construction_label,
         neck_label=neck_label,
-        case_warn=case_warn,
+        role_icons=_ROLE_ICONS,
         active_nav='builds',
         breadcrumb=[('Build Planner', '/builds'), (build.name, None)],
         page_title=f'Luthia · Build · {build.name}',
@@ -344,118 +321,3 @@ def _check_thickness_warning(build: Build) -> None:
     top_part.thickness_warning  = warn
 
 
-# ---------------------------------------------------------------------------
-# HTML rendering helpers
-# ---------------------------------------------------------------------------
-
-def _build_card_html(b: Build) -> str:
-    """Render a summary card for one build on the builds index page."""
-    parts_done   = sum(1 for p in b.parts if p.product_id)
-    parts_total  = len(b.parts)
-    progress_pct = int(parts_done / parts_total * 100) if parts_total else 0
-    price_str    = f'{b.total_price:,.0f} SEK' if b.total_price else '—'
-    updated      = b.updated_at.strftime('%Y-%m-%d') if b.updated_at else ''
-    warn_html    = (
-        ' <span title="Thickness warning" style="color:#f59e0b;">⚠</span>'
-        if any(p.thickness_warning for p in b.parts) else ''
-    )
-
-    return f"""
-<a href="/builds/{b.build_id}" class="build-card">
-  <div class="build-card-title">{b.name}{warn_html}</div>
-  <div class="build-card-sub">{b.template.name} · {b.variant.label}</div>
-  <div class="build-progress-bar"><div class="build-progress-fill" style="width:{progress_pct}%"></div></div>
-  <div class="build-card-meta">
-    <span>{parts_done}/{parts_total} parts</span>
-    <span class="build-card-price">{price_str}</span>
-    <span style="color:#3f3f46;">{updated}</span>
-  </div>
-</a>"""
-
-
-def _render_parts(build: Build) -> tuple[str, float]:
-    """Render HTML for all parts in a build.  Returns (html_string, total_price)."""
-    parts_html = ''
-    total      = 0.0
-
-    for part in build.parts:
-        if part.product_id and part.product:
-            html, price = _assigned_part_html(part)
-            total += price
-        else:
-            html = _empty_part_html(part)
-        parts_html += html
-
-    return parts_html, total
-
-
-def _assigned_part_html(part: BuildPart) -> tuple[str, float]:
-    """Render the HTML row for a part that has a product assigned.
-
-    Returns (html_string, price) so the caller can accumulate the build total.
-    """
-    p          = part.product
-    role_label = part.role.capitalize()
-    icon       = _ROLE_ICONS.get(part.role, '•')
-    species    = p.species.commercial_name or p.species.scientific_name
-    flag       = VENDOR_FLAGS.get(p.vendor.country, '')
-    price      = p.price
-
-    dims_parts = []
-    if p.thickness_mm: dims_parts.append(f'{p.thickness_mm:.0f}mm thick')
-    if p.width_mm:     dims_parts.append(f'{p.width_mm:.0f}mm wide')
-    if p.length_mm:    dims_parts.append(f'{p.length_mm:.0f}mm long')
-    dims_str = ' · '.join(dims_parts) if dims_parts else 'dimensions not specified'
-
-    warn_html = ''
-    if part.thickness_warning:
-        warn_html += (
-            '<div class="part-warning">'
-            '⚠ Combined body + top thickness exceeds 45mm — body may need planing'
-            '</div>'
-        )
-    if part.dims_unverified:
-        warn_html += (
-            '<div class="part-notice">'
-            'ℹ Dimensions not specified by vendor — verify suitability before ordering'
-            '</div>'
-        )
-
-    link_html  = (
-        f'<a href="{p.product_url}" target="_blank" class="view-link" style="font-size:11px;">View ↗</a>'
-        if p.product_url else ''
-    )
-    grade_html = f'<span class="badge-grade">{p.grade.name}</span>' if p.grade else ''
-
-    html = f"""
-<div class="part-row">
-  <div class="part-role">{icon} {role_label}</div>
-  <div class="part-detail">
-    <div class="part-species">{species} {grade_html}</div>
-    <div class="part-meta">{p.vendor.name} {flag} · {dims_str}</div>
-    {warn_html}
-  </div>
-  <div class="part-price">{price:,.0f} <span style="color:#52525b;font-size:11px;">SEK</span></div>
-  <div class="part-actions">
-    {link_html}
-    <button class="btn-sm" onclick="openPicker('{part.role}', {part.part_id})">Change</button>
-  </div>
-</div>"""
-
-    return html, price
-
-
-def _empty_part_html(part: BuildPart) -> str:
-    """Render the HTML row for a part slot that has no product assigned yet."""
-    role_label = part.role.capitalize()
-    icon       = _ROLE_ICONS.get(part.role, '•')
-
-    return f"""
-<div class="part-row part-empty">
-  <div class="part-role">{icon} {role_label}</div>
-  <div class="part-detail" style="color:#52525b;">No product selected</div>
-  <div class="part-price">—</div>
-  <div class="part-actions">
-    <button class="btn-select" onclick="openPicker('{part.role}', {part.part_id})">Select</button>
-  </div>
-</div>"""

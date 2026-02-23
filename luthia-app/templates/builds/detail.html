@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/builds.html' import part_row_assigned, part_row_empty %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/builds.css">
@@ -17,7 +18,13 @@
     </div>
     <div class="section-label">Parts</div>
     <div class="parts-list">
-      {{ parts_html | safe }}
+      {% for part in build.parts %}
+        {% if part.product_id and part.product %}
+          {{ part_row_assigned(part, part.product, role_icons.get(part.role, '•')) }}
+        {% else %}
+          {{ part_row_empty(part, role_icons.get(part.role, '•')) }}
+        {% endif %}
+      {% endfor %}
     </div>
     <div class="total-bar">
       <span>Build Total</span>
@@ -44,10 +51,13 @@
       <div class="ref-row"><span>Thickness at 1st fret</span><span>{{ "%.1f" % ref.neck_thickness_1f_mm }} mm</span></div>
       <div class="ref-row"><span>Thickness at 12th fret</span><span>{{ "%.1f" % ref.neck_thickness_12f_mm }} mm</span></div>
       <div class="ref-row ref-section">Overall</div>
-      <div class="ref-row"><span>Overall length</span><span>{{ "%.0f" % ref.overall_length_mm }} mm {{ case_warn | safe }}</span></div>
+      <div class="ref-row">
+        <span>Overall length</span>
+        <span>{{ "%.0f" % ref.overall_length_mm }} mm{% if ref.overall_length_mm and ref.overall_length_mm > 1250 %} <span style="color:#f59e0b;" title="Exceeds standard case length of 1250mm">⚠</span>{% endif %}{% if ref.body_width_mm and ref.body_width_mm > 380 %} <span style="color:#f59e0b;" title="Exceeds standard case width of 380mm">⚠</span>{% endif %}</span>
+      </div>
       <div class="ref-row"><span>Scale</span><span>{{ "%.1f" % ref.scale_mm }} mm ({{ ref.strings }}-string)</span></div>
     </div>
-    {% if case_warn %}
+    {% if (ref.overall_length_mm and ref.overall_length_mm > 1250) or (ref.body_width_mm and ref.body_width_mm > 380) %}
     <div class="case-warn-note">⚠ One or more dimensions may exceed standard transport case limits (L 1250mm · W 380mm)</div>
     {% endif %}
   </div>
