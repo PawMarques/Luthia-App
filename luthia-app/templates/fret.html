@@ -1,0 +1,786 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══════════════════════════════════════════════════════════════
+   Fret Calculator — layout
+══════════════════════════════════════════════════════════════ */
+.fc-wrap {
+  padding: 28px 32px;
+  max-width: 1100px;
+}
+
+.fc-title {
+  font-family: 'Cormorant', 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.fc-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+/* ── Two-column layout ───────────────────────────────────────── */
+.fc-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .fc-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Control panel (left column) ──────────────────────────────── */
+.fc-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 16px;
+}
+
+.fc-panel-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* Preset grid */
+.fc-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.fc-preset-btn {
+  padding: 7px 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc-preset-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fc-preset-btn.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Custom scale input */
+.fc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fc-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fc-input {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.12s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fc-input:focus { border-color: var(--accent); }
+
+/* Fret count segment control */
+.fc-segments {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fc-seg {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+}
+
+.fc-seg:last-child { border-right: none; }
+
+.fc-seg:hover { background: color-mix(in srgb, var(--text-primary) 5%, transparent); color: var(--text-secondary); }
+
+.fc-seg.is-active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Unit toggle */
+.fc-unit-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fc-toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--border-color);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.fc-toggle-track.is-on { background: var(--accent); }
+
+.fc-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.15s;
+  pointer-events: none;
+}
+
+.fc-toggle-track.is-on .fc-toggle-thumb { left: 19px; }
+
+.fc-unit-labels {
+  display: flex;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.fc-unit-lbl { color: var(--text-muted); }
+.fc-unit-lbl.is-active { color: var(--text-primary); font-weight: 600; }
+
+/* Calculate button */
+.fc-calc-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 7px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.fc-calc-btn:hover {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Scale info pill */
+.fc-scale-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  line-height: 1.5;
+}
+
+.fc-scale-info strong { color: var(--text-secondary); }
+
+/* ── Right column: results ────────────────────────────────────── */
+.fc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Fretboard diagram ────────────────────────────────────────── */
+.fc-diagram-wrap {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 18px 20px 14px;
+}
+
+.fc-diagram-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+#fc-fretboard-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── Fret table ───────────────────────────────────────────────── */
+.fc-table-wrap {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fc-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fc-table-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.fc-export-btn {
+  padding: 5px 14px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.fc-export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fc-table-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+table.fc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.fc-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-bg);
+  z-index: 1;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fc-table thead th:not(:first-child) { text-align: right; }
+
+.fc-table tbody td {
+  padding: 7px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  color: var(--text-secondary);
+}
+
+.fc-table tbody td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+.fc-table tbody tr:last-child td { border-bottom: none; }
+
+.fc-table tbody tr:hover td { background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
+
+/* Octave row (fret 12) highlight */
+.fc-table tbody tr.is-octave td {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fc-table tbody tr.is-octave td:first-child::after {
+  content: '  ♪';
+  opacity: 0.5;
+  font-size: 0.7em;
+}
+
+/* Fret number badge */
+.fc-fret-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+tr.is-octave .fc-fret-num {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+/* ── Empty / placeholder state ────────────────────────────────── */
+.fc-placeholder {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+}
+
+.fc-placeholder svg { opacity: 0.25; margin-bottom: 12px; }
+.fc-placeholder p { font-size: 0.85rem; margin: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fc-wrap">
+
+  <h1 class="fc-title">Fret Calculator</h1>
+  <p class="fc-subtitle">Compute precise fret positions using the equal-temperament formula</p>
+
+  <div class="fc-layout">
+
+    <!-- ── Left: controls ──────────────────────────────────────── -->
+    <div class="fc-panel">
+
+      <!-- Guitar presets -->
+      <div>
+        <div class="fc-panel-section-label">Guitar</div>
+        <div class="fc-presets">
+          {% for p in guitar_presets %}
+          <button class="fc-preset-btn"
+                  data-scale="{{ p.scale_mm }}"
+                  data-label="{{ p.label }}"
+                  onclick="selectPreset(this)">{{ p.label }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Bass presets -->
+      <div>
+        <div class="fc-panel-section-label">Bass</div>
+        <div class="fc-presets">
+          {% for p in bass_presets %}
+          <button class="fc-preset-btn"
+                  data-scale="{{ p.scale_mm }}"
+                  data-label="{{ p.label }}"
+                  onclick="selectPreset(this)">{{ p.label }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Custom scale -->
+      <div class="fc-field">
+        <label class="fc-label" for="fc-scale-input">Custom scale (mm)</label>
+        <input class="fc-input" id="fc-scale-input" type="number"
+               min="200" max="1200" step="0.1"
+               placeholder="e.g. 863.6"
+               oninput="onCustomScale()">
+      </div>
+
+      <!-- Fret count -->
+      <div>
+        <div class="fc-panel-section-label">Number of frets</div>
+        <div class="fc-segments">
+          {% for n in [20, 21, 22, 24] %}
+          <button class="fc-seg {% if n == 24 %}is-active{% endif %}"
+                  data-frets="{{ n }}"
+                  onclick="selectFrets(this)">{{ n }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Unit toggle -->
+      <div>
+        <div class="fc-panel-section-label">Display units</div>
+        <div class="fc-unit-toggle">
+          <div class="fc-unit-labels">
+            <span class="fc-unit-lbl is-active" id="lbl-mm">mm</span>
+            <span class="fc-unit-lbl" id="lbl-in">inches</span>
+          </div>
+          <button class="fc-toggle-track" id="unit-toggle" onclick="toggleUnit()"
+                  title="Switch between mm and inches">
+            <div class="fc-toggle-thumb"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scale summary -->
+      <div class="fc-scale-info" id="fc-scale-info">
+        Select a preset or enter a custom scale to begin.
+      </div>
+
+      <!-- Calculate -->
+      <button class="fc-calc-btn" onclick="calculate()">Calculate fret positions</button>
+
+      <!-- Export -->
+      <button class="fc-export-btn" id="fc-export-btn" onclick="exportXlsx()" disabled
+              style="width:100%;text-align:center;">⬇ Export to Excel</button>
+
+    </div>
+
+    <!-- ── Right: results ──────────────────────────────────────── -->
+    <div class="fc-results">
+
+      <!-- Fretboard diagram -->
+      <div class="fc-diagram-wrap">
+        <div class="fc-diagram-label">Fretboard diagram (proportional scale)</div>
+        <svg id="fc-fretboard-svg" viewBox="0 0 900 90" xmlns="http://www.w3.org/2000/svg">
+          <!-- Placeholder state -->
+          <rect x="0" y="10" width="900" height="70" rx="4"
+                fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="6,4"/>
+          <text x="450" y="50" text-anchor="middle" font-size="13"
+                fill="var(--text-muted)" font-family="sans-serif" opacity="0.4">
+            Diagram will appear here
+          </text>
+        </svg>
+      </div>
+
+      <!-- Data table -->
+      <div class="fc-table-wrap">
+        <div class="fc-table-head">
+          <span class="fc-table-title">Fret positions</span>
+          <button class="fc-export-btn" id="fc-export-btn-2" onclick="exportXlsx()" disabled>⬇ Export xlsx</button>
+        </div>
+        <div class="fc-table-scroll">
+          <div class="fc-placeholder" id="fc-placeholder">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+            </svg>
+            <p>Select a scale and fret count, then press <strong>Calculate</strong>.</p>
+          </div>
+          <table class="fc-table" id="fc-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>Fret</th>
+                <th id="th-from-nut">From nut (mm)</th>
+                <th id="th-spacing">Spacing (mm)</th>
+                <th id="th-from-nut-2">From nut (in)</th>
+                <th id="th-spacing-2">Spacing (in)</th>
+              </tr>
+            </thead>
+            <tbody id="fc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Fret Calculator — client controller
+// ═══════════════════════════════════════════════════════════════
+
+const state = {
+  scale_mm:  null,
+  num_frets: 24,
+  unit:      'mm',    // 'mm' or 'in'
+  label:     '',
+  frets:     [],      // computed fret data from API
+};
+
+// ── Preset selection ──────────────────────────────────────────
+function selectPreset(btn) {
+  document.querySelectorAll('.fc-preset-btn').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  state.scale_mm = parseFloat(btn.dataset.scale);
+  state.label    = btn.dataset.label;
+  document.getElementById('fc-scale-input').value = '';
+  updateScaleInfo();
+}
+
+function onCustomScale() {
+  const val = parseFloat(document.getElementById('fc-scale-input').value);
+  document.querySelectorAll('.fc-preset-btn').forEach(b => b.classList.remove('is-active'));
+  if (val > 0) {
+    state.scale_mm = val;
+    state.label    = `${val.toFixed(1)}mm custom`;
+    updateScaleInfo();
+  } else {
+    state.scale_mm = null;
+    document.getElementById('fc-scale-info').textContent = 'Select a preset or enter a custom scale.';
+  }
+}
+
+function updateScaleInfo() {
+  if (!state.scale_mm) return;
+  const inches = (state.scale_mm / 25.4).toFixed(3);
+  document.getElementById('fc-scale-info').innerHTML =
+    `<strong>${state.scale_mm.toFixed(1)} mm</strong> &nbsp;·&nbsp; <strong>${inches}″</strong>`;
+}
+
+// ── Fret count ─────────────────────────────────────────────────
+function selectFrets(btn) {
+  document.querySelectorAll('.fc-seg').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  state.num_frets = parseInt(btn.dataset.frets);
+}
+
+// ── Unit toggle ────────────────────────────────────────────────
+function toggleUnit() {
+  state.unit = state.unit === 'mm' ? 'in' : 'mm';
+  const isIn = state.unit === 'in';
+  document.getElementById('unit-toggle').classList.toggle('is-on', isIn);
+  document.getElementById('lbl-mm').classList.toggle('is-active', !isIn);
+  document.getElementById('lbl-in').classList.toggle('is-active', isIn);
+
+  // Update table headers
+  const label = isIn ? 'in' : 'mm';
+  document.getElementById('th-from-nut').textContent   = `From nut (${label})`;
+  document.getElementById('th-spacing').textContent    = `Spacing (${label})`;
+  document.getElementById('th-from-nut-2').textContent = `From nut (${isIn ? 'mm' : 'in'})`;
+  document.getElementById('th-spacing-2').textContent  = `Spacing (${isIn ? 'mm' : 'in'})`;
+
+  // Re-render table with new unit (data already loaded)
+  if (state.frets.length) renderTable(state.frets);
+}
+
+// ── Calculate ──────────────────────────────────────────────────
+async function calculate() {
+  if (!state.scale_mm) {
+    shake(document.getElementById('fc-scale-input'));
+    return;
+  }
+
+  const params = new URLSearchParams({
+    scale_mm:  state.scale_mm,
+    num_frets: state.num_frets,
+  });
+
+  const data = await fetch(`/api/fret/calculate?${params}`).then(r => r.json());
+
+  if (!data.ok) {
+    alert(data.error || 'Calculation failed.');
+    return;
+  }
+
+  state.frets = data.frets;
+
+  renderDiagram(data.frets, state.scale_mm);
+  renderTable(data.frets);
+
+  // Enable export buttons
+  document.getElementById('fc-export-btn').disabled   = false;
+  document.getElementById('fc-export-btn-2').disabled = false;
+}
+
+// ── Fretboard SVG diagram ──────────────────────────────────────
+function renderDiagram(frets, scale_mm) {
+  const svg    = document.getElementById('fc-fretboard-svg');
+  const W      = 900;
+  const H      = 90;
+  const nutX   = 12;
+  const endX   = W - 12;
+  const boardW = endX - nutX;
+  const topY   = 14;
+  const botY   = H - 14;
+  const midY   = H / 2;
+
+  // Wood-grain background colour respects current theme
+  const isDark = document.documentElement.dataset.mode !== 'light';
+  const boardFill  = isDark ? '#2a1f0e' : '#d4a96a';
+  const fretColor  = isDark ? '#c8a96a' : '#8b6914';
+  const stringClr  = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)';
+  const octaveClr  = 'var(--accent)';
+  const textClr    = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+
+  // String y positions (6 strings, evenly spaced)
+  const strings = [topY + 6, topY + 14, topY + 22, botY - 22, botY - 14, botY - 6];
+
+  // Map fret distance from nut to SVG x position
+  function toX(fromNut) {
+    return nutX + (fromNut / scale_mm) * boardW;
+  }
+
+  let svgHtml = `
+  <!-- Fretboard body -->
+  <rect x="${nutX}" y="${topY}" width="${boardW}" height="${botY - topY}"
+        rx="3" fill="${boardFill}" opacity="${isDark ? 0.9 : 0.7}"/>`;
+
+  // Strings
+  for (const sy of strings) {
+    svgHtml += `<line x1="${nutX}" y1="${sy}" x2="${endX}" y2="${sy}"
+      stroke="${stringClr}" stroke-width="1"/>`;
+  }
+
+  // Fret lines
+  for (const f of frets) {
+    if (f.fret === 0) continue;
+    const x       = toX(f.from_nut_mm);
+    const isOct   = f.fret % 12 === 0;
+    const color   = isOct ? octaveClr : fretColor;
+    const width   = isOct ? 2.5 : 1.5;
+    const opacity = isOct ? 1 : 0.8;
+
+    svgHtml += `<line x1="${x}" y1="${topY}" x2="${x}" y2="${botY}"
+      stroke="${color}" stroke-width="${width}" opacity="${opacity}"/>`;
+  }
+
+  // Nut (thick left edge)
+  svgHtml += `<rect x="${nutX}" y="${topY}" width="4" height="${botY - topY}"
+    fill="${fretColor}" rx="1"/>`;
+
+  // Fret number labels – only selected ones to avoid clutter
+  const labelFrets = new Set([1, 3, 5, 7, 9, 12, 15, 17, 19, 21, 24]);
+  for (const f of frets) {
+    if (!labelFrets.has(f.fret)) continue;
+    const xPrev = f.fret === 1 ? nutX : toX(frets[f.fret - 1].from_nut_mm);
+    const xCurr = toX(f.from_nut_mm);
+    const cx    = (xPrev + xCurr) / 2;
+
+    if (cx > endX - 6) continue;   // skip if outside bounds
+
+    const isOct = f.fret % 12 === 0;
+    svgHtml += `<text x="${cx}" y="${midY + 4}" text-anchor="middle"
+      font-size="${isOct ? 10 : 9}" font-family="'IBM Plex Sans', sans-serif"
+      font-weight="${isOct ? 700 : 400}"
+      fill="${isOct ? octaveClr : textClr}">${f.fret}</text>`;
+  }
+
+  // Inlay dots (standard positions: 3, 5, 7, 9 single; 12 double)
+  const inlayFrets   = [3, 5, 7, 9];
+  const doubleFrets  = [12];
+  const inlayColor   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+
+  for (const fn of [...inlayFrets, ...doubleFrets]) {
+    if (fn > frets.length - 1) continue;
+    const xPrev = fn === 0 ? nutX : toX(frets[fn - 1].from_nut_mm);
+    const xCurr = toX(frets[fn].from_nut_mm);
+    const cx    = (xPrev + xCurr) / 2;
+
+    if (doubleFrets.includes(fn)) {
+      svgHtml += `<circle cx="${cx}" cy="${midY - 8}" r="3.5" fill="${inlayColor}"/>`;
+      svgHtml += `<circle cx="${cx}" cy="${midY + 8}" r="3.5" fill="${inlayColor}"/>`;
+    } else {
+      svgHtml += `<circle cx="${cx}" cy="${midY}" r="3.5" fill="${inlayColor}"/>`;
+    }
+  }
+
+  svg.innerHTML = svgHtml;
+}
+
+// ── Data table ─────────────────────────────────────────────────
+function renderTable(frets) {
+  const primary   = state.unit === 'mm' ? 'from_nut_mm' : 'from_nut_in';
+  const secondary = state.unit === 'mm' ? 'from_nut_in' : 'from_nut_mm';
+  const spPrimary = state.unit === 'mm' ? 'spacing_mm'  : 'spacing_in';
+  const spSecond  = state.unit === 'mm' ? 'spacing_in'  : 'spacing_mm';
+  const pDec      = state.unit === 'mm' ? 2 : 4;
+  const sDec      = state.unit === 'mm' ? 4 : 2;
+
+  const tbody = document.getElementById('fc-tbody');
+  tbody.innerHTML = frets.map(f => {
+    const isOct = f.fret > 0 && f.fret % 12 === 0;
+    const sp    = f[spPrimary]  != null ? f[spPrimary].toFixed(pDec)  : '—';
+    const sp2   = f[spSecond]   != null ? f[spSecond].toFixed(sDec)   : '—';
+    return `<tr class="${isOct ? 'is-octave' : ''}">
+      <td><span class="fc-fret-num">${f.fret}</span></td>
+      <td>${f[primary].toFixed(pDec)}</td>
+      <td>${sp}</td>
+      <td>${f[secondary].toFixed(sDec)}</td>
+      <td>${sp2}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('fc-placeholder').style.display = 'none';
+  document.getElementById('fc-table').style.display       = '';
+}
+
+// ── Excel export ───────────────────────────────────────────────
+function exportXlsx() {
+  if (!state.scale_mm) return;
+  const params = new URLSearchParams({
+    scale_mm:  state.scale_mm,
+    num_frets: state.num_frets,
+    label:     state.label || `${state.scale_mm.toFixed(1)}mm`,
+  });
+  window.location.href = `/api/fret/export?${params}`;
+}
+
+// ── Shake animation for empty input ───────────────────────────
+function shake(el) {
+  el.style.transition = 'none';
+  el.style.borderColor = '#ef4444';
+  let x = 0;
+  const id = setInterval(() => {
+    x = (x + 1) % 4;
+    el.style.transform = `translateX(${[0, -4, 4, 0][x]}px)`;
+    if (x === 0) { clearInterval(id); setTimeout(() => { el.style.transform = ''; el.style.borderColor = ''; }, 100); }
+  }, 60);
+}
+
+// ── Keyboard shortcut: Enter to calculate ─────────────────────
+document.getElementById('fc-scale-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') calculate();
+});
+
+// ── Auto-select 34" bass on load (sensible default for a bass luthier) ──
+window.addEventListener('DOMContentLoaded', () => {
+  const defaultBtn = document.querySelector('.fc-preset-btn[data-scale="863.6"]');
+  if (defaultBtn) { selectPreset(defaultBtn); calculate(); }
+});
+</script>
+{% endblock %}

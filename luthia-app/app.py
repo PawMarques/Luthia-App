@@ -20,6 +20,7 @@ from routes.images    import images_bp
 from routes.templates import templates_bp
 from routes.vendors    import vendors_bp
 from routes.species    import species_bp
+from routes.fret       import fret_bp
 
 
 def create_app(test_config: Optional[dict] = None) -> Flask:
@@ -60,6 +61,7 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
     app.register_blueprint(templates_bp)
     app.register_blueprint(vendors_bp)
     app.register_blueprint(species_bp)
+    app.register_blueprint(fret_bp)
 
     @app.route('/')
     def index():
