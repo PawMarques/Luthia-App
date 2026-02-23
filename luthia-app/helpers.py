@@ -4,7 +4,7 @@ Single Responsibility: pure formatting + configuration constants only.
 No Flask or SQLAlchemy imports here, so this module can be tested in isolation.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ def staleness_info(last_updated) -> tuple[str, str]:
     """
     if not last_updated:
         return '', '#3f3f46'
-    age_months = (datetime.utcnow() - last_updated).days / 30.4
+    age_months = (datetime.now(timezone.utc).replace(tzinfo=None) - last_updated).days / 30.4
     return last_updated.strftime('%Y-%m-%d'), staleness_color(age_months)
 
 

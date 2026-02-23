@@ -8,7 +8,7 @@ Provides:
 """
 
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import func
@@ -323,7 +323,7 @@ def api_product_edit(product_id):
     if errors:
         return jsonify({'ok': False, 'errors': errors}), 400
 
-    p.last_updated = datetime.utcnow()
+    p.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
     return jsonify({'ok': True})
 

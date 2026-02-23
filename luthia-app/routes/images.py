@@ -12,7 +12,7 @@ import uuid
 from flask import Blueprint, current_app, jsonify, request
 
 from helpers import allowed_file, fmt_image
-from models import ProductImage, db
+from models import Product, ProductImage, db
 
 images_bp = Blueprint('images', __name__)
 
@@ -25,7 +25,6 @@ images_bp = Blueprint('images', __name__)
 def api_image_upload(product_id):
     """Upload a file or save a URL as a product image."""
     # Verify the product exists before attaching images to it.
-    from models import Product
     Product.query.get_or_404(product_id)
 
     if request.is_json:

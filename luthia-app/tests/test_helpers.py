@@ -91,7 +91,7 @@ def test_staleness_info_one_month_ago_is_green():
     one_month_ago = datetime(2026, 1, 23)
 
     with patch('helpers.datetime') as mock_dt:
-        mock_dt.utcnow.return_value = fixed_now
+        mock_dt.now.return_value.replace.return_value = fixed_now
         date_str, color = staleness_info(one_month_ago)
 
     assert date_str == '2026-01-23'
@@ -104,7 +104,7 @@ def test_staleness_info_five_months_ago_is_amber():
     five_months_ago  = datetime(2025, 9, 23)
 
     with patch('helpers.datetime') as mock_dt:
-        mock_dt.utcnow.return_value = fixed_now
+        mock_dt.now.return_value.replace.return_value = fixed_now
         date_str, color = staleness_info(five_months_ago)
 
     assert date_str == '2025-09-23'
@@ -117,7 +117,7 @@ def test_staleness_info_eight_months_ago_is_red():
     eight_months_ago = datetime(2025, 6, 23)
 
     with patch('helpers.datetime') as mock_dt:
-        mock_dt.utcnow.return_value = fixed_now
+        mock_dt.now.return_value.replace.return_value = fixed_now
         date_str, color = staleness_info(eight_months_ago)
 
     assert date_str == '2025-06-23'
