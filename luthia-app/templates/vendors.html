@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Vendors page layout ─────────────────────────────────── */
+.vendors-wrap {
+  padding: 28px 32px;
+  max-width: 1100px;
+}
+
+.vendors-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vendors-title {
+  font-family: 'Cormorant', 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.vendors-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* ── Vendor grid ─────────────────────────────────────────── */
+.vendor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+/* ── Vendor card ─────────────────────────────────────────── */
+.vendor-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px 22px 18px;
+  transition: border-color 0.15s, opacity 0.2s;
+  position: relative;
+}
+
+.vendor-card.is-inactive {
+  opacity: 0.55;
+}
+
+.vendor-card:hover {
+  border-color: var(--accent);
+}
+
+.vendor-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.vendor-flag {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vendor-name-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.vendor-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vendor-country {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Status badge */
+.vendor-status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.vendor-status--active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.vendor-status--inactive {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
+}
+
+/* ── Card fields ─────────────────────────────────────────── */
+.vendor-fields {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.vf-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.vf-lbl {
+  color: var(--text-muted);
+  width: 68px;
+  flex-shrink: 0;
+}
+
+.vf-val {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vf-val a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.vf-val a:hover { text-decoration: underline; }
+
+.vf-miss { color: var(--text-muted); font-style: italic; opacity: 0.6; }
+
+/* Product count pill */
+.vendor-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--surface-2, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 3px 10px;
+  margin-bottom: 14px;
+}
+
+.vendor-count strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ── Card actions ────────────────────────────────────────── */
+.vendor-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-vendor {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.btn-vendor:hover {
+  background: var(--hover-bg, rgba(255,255,255,0.06));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-vendor--danger:hover {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-vendor--accent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Add vendor card ─────────────────────────────────────── */
+.vendor-card--add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 200px;
+  border-style: dashed;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.vendor-card--add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vendor-card--add svg { opacity: 0.5; }
+.vendor-card--add:hover svg { opacity: 1; }
+
+.vendor-card--add-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Edit form (shown inside card on edit) ───────────────── */
+.vendor-edit-form {
+  display: none;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.vendor-edit-form.is-open { display: flex; }
+
+.vef-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vef-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vef-input {
+  background: var(--input-bg, rgba(255,255,255,0.06));
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.vef-input:focus {
+  border-color: var(--accent);
+}
+
+.vef-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.vef-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.vef-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: -4px;
+}
+
+/* ── Modal / overlay ─────────────────────────────────────── */
+.vendor-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.vendor-modal-backdrop.is-open {
+  display: flex;
+}
+
+.vendor-modal {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 28px 28px 24px;
+  width: min(480px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.vendor-modal-title {
+  font-family: 'Cormorant', 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+}
+
+.vendor-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.btn-primary {
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.btn-cancel {
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.btn-cancel:hover { background: rgba(255,255,255,0.05); }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transform: translateY(120%);
+  transition: transform 0.25s;
+  pointer-events: none;
+}
+
+.toast.is-visible { transform: translateY(0); }
+.toast.is-error { border-left-color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vendors-wrap">
+
+  <div class="vendors-header">
+    <div>
+      <h1 class="vendors-title">Vendors</h1>
+      <div class="vendors-subtitle">
+        {{ vendors | length }} vendor{{ 's' if vendors | length != 1 else '' }} ·
+        {% set active_count = vendors | selectattr('0.active') | list | length %}
+        {{ active_count }} active
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-add-vendor">+ Add Vendor</button>
+  </div>
+
+  <!-- Vendor grid -->
+  <div class="vendor-grid" id="vendor-grid">
+
+    {% for vendor, product_count in vendors %}
+    <div class="vendor-card{% if not vendor.active %} is-inactive{% endif %}"
+         id="vendor-card-{{ vendor.vendor_id }}"
+         data-vendor-id="{{ vendor.vendor_id }}">
+
+      <!-- View mode -->
+      <div class="vendor-view" id="vendor-view-{{ vendor.vendor_id }}">
+        <div class="vendor-card-head">
+          <div class="vendor-flag">{{ vendor.country | vendor_flag }}</div>
+          <div class="vendor-name-block">
+            <div class="vendor-name">{{ vendor.name }}</div>
+            <div class="vendor-country">{{ vendor.country or '—' }}</div>
+          </div>
+          <span class="vendor-status {% if vendor.active %}vendor-status--active{% else %}vendor-status--inactive{% endif %}">
+            {{ 'Active' if vendor.active else 'Inactive' }}
+          </span>
+        </div>
+
+        <div class="vendor-count">
+          <strong>{{ product_count }}</strong>&nbsp;product{{ 's' if product_count != 1 else '' }}
+          &nbsp;·&nbsp; {{ vendor.currency or '—' }}
+        </div>
+
+        <div class="vendor-fields">
+          <div class="vf-row">
+            <span class="vf-lbl">Website</span>
+            {% if vendor.website %}
+              <span class="vf-val"><a href="{{ vendor.website }}" target="_blank" rel="noopener">{{ vendor.website }}</a></span>
+            {% else %}
+              <span class="vf-val vf-miss">not set</span>
+            {% endif %}
+          </div>
+          <div class="vf-row">
+            <span class="vf-lbl">Since</span>
+            <span class="vf-val">{{ vendor.created_at.strftime('%B %Y') if vendor.created_at else '—' }}</span>
+          </div>
+        </div>
+
+        <div class="vendor-actions">
+          <button class="btn-vendor btn-vendor--accent" onclick="openEditModal({{ vendor.vendor_id }})">Edit</button>
+          {% if vendor.website %}
+            <a href="{{ vendor.website }}" target="_blank" rel="noopener" class="btn-vendor">Visit Site ↗</a>
+          {% endif %}
+          <button class="btn-vendor {% if vendor.active %}btn-vendor--danger{% endif %}"
+                  onclick="toggleActive({{ vendor.vendor_id }})">
+            {{ 'Deactivate' if vendor.active else 'Reactivate' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+    <!-- Add new card placeholder -->
+    <div class="vendor-card vendor-card--add" id="card-add-new" onclick="openAddModal()">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <div class="vendor-card--add-label">Add new vendor</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Add/Edit modal ──────────────────────────────────────── -->
+<div class="vendor-modal-backdrop" id="vendor-modal">
+  <div class="vendor-modal">
+    <div class="vendor-modal-title" id="modal-title">Add Vendor</div>
+    <input type="hidden" id="modal-vendor-id" value="">
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="vef-field">
+        <label class="vef-label">Vendor name *</label>
+        <input class="vef-input" id="modal-name" placeholder="e.g. Guitars & Woods" autocomplete="off">
+      </div>
+
+      <div class="vef-row">
+        <div class="vef-field">
+          <label class="vef-label">Country</label>
+          <input class="vef-input" id="modal-country" placeholder="e.g. Germany" autocomplete="off">
+        </div>
+        <div class="vef-field">
+          <label class="vef-label">Currency</label>
+          <input class="vef-input" id="modal-currency" placeholder="EUR" maxlength="3" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="vef-field">
+        <label class="vef-label">Website</label>
+        <input class="vef-input" id="modal-website" placeholder="https://…" type="url" autocomplete="off">
+      </div>
+
+      <div class="vef-error" id="modal-error"></div>
+    </div>
+
+    <div class="vendor-modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-save-btn" onclick="saveVendor()">Add Vendor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast notification ─────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─────────────────────────────────────────────────────────────
+// Vendors page JS
+// ─────────────────────────────────────────────────────────────
+
+let _editingId = null;
+
+// Open modal to ADD a new vendor
+function openAddModal() {
+  _editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Vendor';
+  document.getElementById('modal-save-btn').textContent = 'Add Vendor';
+  document.getElementById('modal-vendor-id').value = '';
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-country').value = '';
+  document.getElementById('modal-currency').value = 'EUR';
+  document.getElementById('modal-website').value = '';
+  document.getElementById('modal-error').textContent = '';
+  document.getElementById('vendor-modal').classList.add('is-open');
+  document.getElementById('modal-name').focus();
+}
+
+// Open modal to EDIT an existing vendor — populate from the DOM card
+function openEditModal(vendorId) {
+  _editingId = vendorId;
+  const card = document.getElementById(`vendor-card-${vendorId}`);
+  if (!card) return;
+
+  document.getElementById('modal-title').textContent = 'Edit Vendor';
+  document.getElementById('modal-save-btn').textContent = 'Save Changes';
+  document.getElementById('modal-vendor-id').value = vendorId;
+
+  // Read current values from the card's data attributes (set below via JS refresh)
+  // Fetch fresh from API to be safe
+  fetch(`/api/vendors`)
+    .then(r => r.json())
+    .then(vendors => {
+      const v = vendors.find(x => x.vendor_id === vendorId);
+      if (!v) return;
+      document.getElementById('modal-name').value     = v.name    || '';
+      document.getElementById('modal-country').value  = v.country || '';
+      document.getElementById('modal-currency').value = v.currency|| '';
+      document.getElementById('modal-website').value  = v.website || '';
+    });
+
+  document.getElementById('modal-error').textContent = '';
+  document.getElementById('vendor-modal').classList.add('is-open');
+}
+
+function closeModal() {
+  document.getElementById('vendor-modal').classList.remove('is-open');
+  _editingId = null;
+}
+
+// Close modal on backdrop click
+document.getElementById('vendor-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Keyboard: Escape closes modal
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Save (create or update)
+async function saveVendor() {
+  const name     = document.getElementById('modal-name').value.trim();
+  const country  = document.getElementById('modal-country').value.trim();
+  const currency = document.getElementById('modal-currency').value.trim().toUpperCase() || 'EUR';
+  const website  = document.getElementById('modal-website').value.trim();
+
+  const errEl = document.getElementById('modal-error');
+  errEl.textContent = '';
+
+  if (!name) { errEl.textContent = 'Vendor name is required.'; return; }
+
+  const isNew    = !_editingId;
+  const url      = isNew ? '/api/vendors' : `/api/vendors/${_editingId}`;
+  const method   = isNew ? 'POST' : 'PATCH';
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, country, currency, website }),
+  });
+  const data = await res.json();
+
+  if (!data.ok) {
+    errEl.textContent = (data.errors || ['Unknown error.']).join(' ');
+    return;
+  }
+
+  closeModal();
+  showToast(isNew ? 'Vendor added successfully.' : 'Vendor updated.');
+
+  // Refresh the page to re-render cards
+  setTimeout(() => location.reload(), 600);
+}
+
+// Toggle active / inactive
+async function toggleActive(vendorId) {
+  const res  = await fetch(`/api/vendors/${vendorId}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (!data.ok) { showToast('Error toggling vendor.', true); return; }
+
+  showToast(data.vendor.active ? 'Vendor reactivated.' : 'Vendor deactivated.');
+  setTimeout(() => location.reload(), 600);
+}
+
+// ── Wire up header button
+document.getElementById('btn-add-vendor').addEventListener('click', openAddModal);
+
+// ── Toast helper
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('is-error', isError);
+  t.classList.add('is-visible');
+  setTimeout(() => t.classList.remove('is-visible'), 3000);
+}
+
+// ── Allow Enter key in modal inputs to trigger save
+document.querySelectorAll('.vef-input, #modal-name, #modal-country, #modal-currency, #modal-website').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') saveVendor(); });
+});
+</script>
+{% endblock %}

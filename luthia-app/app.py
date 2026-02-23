@@ -12,11 +12,13 @@ from typing import Optional
 
 from flask import Flask, redirect, url_for
 
+from helpers import VENDOR_FLAGS
 from models import db
 from routes.browse    import browse_bp
 from routes.builds    import builds_bp
 from routes.images    import images_bp
 from routes.templates import templates_bp
+from routes.vendors    import vendors_bp
 
 
 def create_app(test_config: Optional[dict] = None) -> Flask:
@@ -46,10 +48,16 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
 
     db.init_app(app)
 
+    # Jinja2 template filter: convert a country name to its flag emoji.
+    @app.template_filter('vendor_flag')
+    def vendor_flag_filter(country: str) -> str:
+        return VENDOR_FLAGS.get(country or '', '')
+
     app.register_blueprint(browse_bp)
     app.register_blueprint(builds_bp)
     app.register_blueprint(images_bp)
     app.register_blueprint(templates_bp)
+    app.register_blueprint(vendors_bp)
 
     @app.route('/')
     def index():
