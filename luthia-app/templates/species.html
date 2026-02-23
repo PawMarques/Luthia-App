@@ -1,0 +1,910 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══════════════════════════════════════════════════════════════
+   Species Guide — page layout
+══════════════════════════════════════════════════════════════ */
+.sg-wrap {
+  padding: 28px 32px;
+  max-width: 1200px;
+}
+
+/* ── Page header ─────────────────────────────────────────── */
+.sg-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.sg-title {
+  font-family: 'Cormorant', 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.sg-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sg-meta-item strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.sg-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sg-search-wrap {
+  flex: 1;
+  min-width: 220px;
+  max-width: 440px;
+  position: relative;
+}
+
+.sg-search-wrap svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.sg-search {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.12s;
+  box-sizing: border-box;
+}
+
+.sg-search:focus { border-color: var(--accent); }
+
+.sg-search::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+/* Filter pills */
+.sg-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sg-filter-btn {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.sg-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sg-filter-btn.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+/* Result count */
+.sg-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* ── Species grid ─────────────────────────────────────────── */
+.sg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+/* ── Species card ─────────────────────────────────────────── */
+.sg-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  padding: 16px 18px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  position: relative;
+  user-select: none;
+}
+
+.sg-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.sg-card.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel-bg));
+}
+
+/* Card top row: name block + CITES badge */
+.sg-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sg-card-names {
+  flex: 1;
+  min-width: 0;
+}
+
+.sg-commercial {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.sg-scientific {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.sg-no-name .sg-commercial {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* CITES badge */
+.badge-cites {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #ef4444;
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+/* Origin */
+.sg-origin {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sg-origin svg { flex-shrink: 0; }
+
+/* Card footer: availability info */
+.sg-card-foot {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sg-vendor-pill {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.sg-no-products {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.65;
+}
+
+.sg-price-range {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Pagination ───────────────────────────────────────────── */
+.sg-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0 16px;
+}
+
+.sg-page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.sg-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sg-page-btn.is-current {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: default;
+}
+
+.sg-page-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ── Loading / empty states ───────────────────────────────── */
+.sg-loading,
+.sg-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sg-empty svg {
+  display: block;
+  margin: 0 auto 12px;
+  opacity: 0.3;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Detail drawer (slide-in from right)
+══════════════════════════════════════════════════════════════ */
+.sg-drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.sg-drawer-backdrop.is-open { display: block; }
+
+.sg-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 100vw);
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
+  z-index: 151;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  overflow: hidden;
+}
+
+.sg-drawer-backdrop.is-open .sg-drawer {
+  transform: translateX(0);
+}
+
+.sg-drawer-header {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sg-drawer-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.sg-drawer-close:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sg-drawer-commercial {
+  font-family: 'Cormorant', 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0 32px 4px 0;
+  line-height: 1.2;
+}
+
+.sg-drawer-scientific {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.sg-drawer-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sg-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* Detail sections */
+.sg-section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* Names grid */
+.sg-names-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.sg-name-row {
+  display: flex;
+  gap: 10px;
+  font-size: 0.82rem;
+}
+
+.sg-name-lbl {
+  width: 90px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.sg-name-val {
+  color: var(--text-secondary);
+}
+
+.sg-name-val em {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* Aliases */
+.sg-aliases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sg-alias-tag {
+  font-size: 0.72rem;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent);
+  color: var(--text-secondary);
+}
+
+.sg-alias-tag.lang-vendor {
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Products in drawer */
+.sg-product-cat {
+  margin-bottom: 14px;
+}
+
+.sg-product-cat-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.sg-product-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  margin-bottom: 5px;
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+}
+
+.sg-product-vendor {
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg-product-format {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sg-product-price {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  font-size: 0.82rem;
+}
+
+.sg-product-stock {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sg-product-stock.in-stock  { background: #34d399; }
+.sg-product-stock.out-stock { background: var(--text-muted); opacity: 0.4; }
+
+/* Drawer loading */
+.sg-drawer-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sg-wrap">
+
+  <!-- Page header -->
+  <div class="sg-header">
+    <div>
+      <h1 class="sg-title">Species Guide</h1>
+      <div class="sg-meta">
+        <span class="sg-meta-item"><strong>{{ total_species }}</strong> species</span>
+        <span class="sg-meta-item"><strong>{{ in_stock_count }}</strong> available from vendors</span>
+        <span class="sg-meta-item"><strong>{{ cites_count }}</strong> CITES listed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar: search + filters -->
+  <div class="sg-toolbar">
+    <div class="sg-search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input class="sg-search" id="sg-search" type="search"
+             placeholder="Search by name, origin, alias…" autocomplete="off">
+    </div>
+
+    <div class="sg-filters">
+      <button class="sg-filter-btn is-active" id="filter-all"       data-filter="all">All species</button>
+      <button class="sg-filter-btn"           id="filter-available" data-filter="available">In stock</button>
+      <button class="sg-filter-btn"           id="filter-cites"     data-filter="cites">CITES listed</button>
+    </div>
+
+    <span class="sg-count" id="sg-count"></span>
+  </div>
+
+  <!-- Species grid -->
+  <div class="sg-grid" id="sg-grid">
+    <div class="sg-loading">Loading species…</div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="sg-pagination" id="sg-pagination"></div>
+
+</div>
+
+<!-- ── Detail drawer ──────────────────────────────────────── -->
+<div class="sg-drawer-backdrop" id="sg-drawer-backdrop">
+  <div class="sg-drawer" id="sg-drawer">
+    <div class="sg-drawer-header">
+      <button class="sg-drawer-close" id="sg-drawer-close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="sg-drawer-commercial" id="drawer-commercial"></div>
+      <div class="sg-drawer-scientific" id="drawer-scientific"></div>
+      <div class="sg-drawer-badges" id="drawer-badges"></div>
+    </div>
+    <div class="sg-drawer-body" id="sg-drawer-body">
+      <div class="sg-drawer-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Species Guide — client-side controller
+// ═══════════════════════════════════════════════════════════════
+
+const state = {
+  q:         '',
+  filter:    'all',   // 'all' | 'available' | 'cites'
+  page:      1,
+  loading:   false,
+  activeId:  null,
+};
+
+let searchTimer = null;
+
+// ── Fetch and render the grid ─────────────────────────────────
+async function loadGrid() {
+  if (state.loading) return;
+  state.loading = true;
+
+  const grid = document.getElementById('sg-grid');
+  grid.innerHTML = '<div class="sg-loading">Loading…</div>';
+  document.getElementById('sg-pagination').innerHTML = '';
+  document.getElementById('sg-count').textContent = '';
+
+  const params = new URLSearchParams({ page: state.page });
+  if (state.q)                    params.set('q', state.q);
+  if (state.filter === 'cites')     params.set('cites', '1');
+  if (state.filter === 'available') params.set('available', '1');
+
+  const data = await fetch(`/api/species?${params}`).then(r => r.json());
+  state.loading = false;
+
+  // Count label
+  document.getElementById('sg-count').textContent =
+    `${data.total} result${data.total !== 1 ? 's' : ''}`;
+
+  // Render cards
+  if (data.rows.length === 0) {
+    grid.innerHTML = `
+      <div class="sg-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        No species matched your search.
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = data.rows.map(renderCard).join('');
+
+  // Re-highlight active card if drawer is open
+  if (state.activeId) {
+    const el = document.getElementById(`sg-card-${state.activeId}`);
+    if (el) el.classList.add('is-active');
+  }
+
+  // Pagination
+  renderPagination(data.page, data.pages);
+}
+
+// ── Card HTML ─────────────────────────────────────────────────
+function renderCard(s) {
+  const name       = s.commercial_name || `<em>${esc(s.scientific_name)}</em>`;
+  const hasName    = !!s.commercial_name;
+  const citesHtml  = s.cites_listed
+    ? `<span class="badge-cites">CITES</span>`
+    : '';
+
+  const originHtml = s.origin
+    ? `<div class="sg-origin">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/>
+        </svg>
+        ${esc(s.origin)}
+       </div>`
+    : `<div class="sg-origin" style="opacity:0.4">—</div>`;
+
+  let footHtml;
+  if (s.total_products > 0) {
+    const pills = s.vendors.map(v =>
+      `<span class="sg-vendor-pill">${v.flag} ${esc(v.name)}</span>`
+    ).join('');
+    const priceHtml = s.min_price != null
+      ? `<span class="sg-price-range">${s.min_price === s.max_price
+          ? fmtPrice(s.min_price)
+          : fmtPrice(s.min_price) + ' – ' + fmtPrice(s.max_price)}</span>`
+      : '';
+    footHtml = `${pills}${priceHtml}`;
+  } else {
+    footHtml = `<span class="sg-no-products">Not available from vendors</span>`;
+  }
+
+  return `
+<div class="sg-card${hasName ? '' : ' sg-no-name'}" id="sg-card-${s.species_id}"
+     onclick="openDrawer(${s.species_id})">
+  <div class="sg-card-top">
+    <div class="sg-card-names">
+      <div class="sg-commercial">${hasName ? esc(s.commercial_name) : esc(s.scientific_name)}</div>
+      <div class="sg-scientific">${esc(s.scientific_name)}</div>
+    </div>
+    ${citesHtml}
+  </div>
+  ${originHtml}
+  <div class="sg-card-foot">${footHtml}</div>
+</div>`;
+}
+
+// ── Pagination ────────────────────────────────────────────────
+function renderPagination(page, pages) {
+  if (pages <= 1) return;
+  const el = document.getElementById('sg-pagination');
+
+  let html = `<button class="sg-page-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
+
+  // Show up to 7 page buttons with ellipsis
+  const range = pageRange(page, pages);
+  let prev = null;
+  for (const p of range) {
+    if (prev !== null && p - prev > 1) html += `<span style="color:var(--text-muted);padding:0 4px">…</span>`;
+    html += `<button class="sg-page-btn ${p === page ? 'is-current' : ''}" onclick="goPage(${p})">${p}</button>`;
+    prev = p;
+  }
+
+  html += `<button class="sg-page-btn" onclick="goPage(${page + 1})" ${page === pages ? 'disabled' : ''}>›</button>`;
+  el.innerHTML = html;
+}
+
+function pageRange(current, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  const s = new Set([1, 2, current - 1, current, current + 1, total - 1, total]);
+  return [...s].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+}
+
+function goPage(p) {
+  state.page = p;
+  loadGrid();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ── Detail drawer ─────────────────────────────────────────────
+async function openDrawer(speciesId) {
+  // Deactivate previous
+  if (state.activeId) {
+    const prev = document.getElementById(`sg-card-${state.activeId}`);
+    if (prev) prev.classList.remove('is-active');
+  }
+  state.activeId = speciesId;
+
+  const card = document.getElementById(`sg-card-${speciesId}`);
+  if (card) card.classList.add('is-active');
+
+  // Show backdrop and reset body
+  const backdrop = document.getElementById('sg-drawer-backdrop');
+  backdrop.classList.add('is-open');
+  document.getElementById('drawer-commercial').textContent = '…';
+  document.getElementById('drawer-scientific').textContent = '';
+  document.getElementById('drawer-badges').innerHTML = '';
+  document.getElementById('sg-drawer-body').innerHTML = '<div class="sg-drawer-loading">Loading…</div>';
+
+  const data = await fetch(`/api/species/${speciesId}`).then(r => r.json());
+  renderDrawer(data);
+}
+
+function renderDrawer(d) {
+  document.getElementById('drawer-commercial').textContent =
+    d.commercial_name || d.scientific_name;
+  document.getElementById('drawer-scientific').textContent = d.scientific_name;
+
+  const badges = [];
+  if (d.cites_listed) badges.push(`<span class="badge-cites">CITES Listed</span>`);
+  if (d.total_products > 0) {
+    const inStk = d.in_stock_count > 0
+      ? `<span style="font-size:0.7rem;padding:2px 9px;border-radius:10px;background:color-mix(in srgb,#34d399 12%,transparent);border:1px solid color-mix(in srgb,#34d399 28%,transparent);color:#34d399;">${d.in_stock_count} in stock</span>`
+      : `<span style="font-size:0.7rem;padding:2px 9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border-color);color:var(--text-muted);">out of stock</span>`;
+    badges.push(inStk);
+  }
+  document.getElementById('drawer-badges').innerHTML = badges.join('');
+
+  // Build body sections
+  let html = '';
+
+  // ── Names section
+  html += `<div>
+    <div class="sg-section-title">Names</div>
+    <div class="sg-names-grid">`;
+
+  const nameRows = [
+    ['Commercial',   d.commercial_name,     d.alt_commercial_name],
+    ['English',      d.english_name,        d.alt_english_name],
+    ['Swedish',      d.swedish_name,        d.alt_swedish_name],
+    ['Portuguese',   d.portuguese_name,     d.alt_portuguese_name],
+  ];
+  for (const [lbl, primary, alt] of nameRows) {
+    const val = [primary, alt].filter(Boolean).join(' · ') || null;
+    html += `<div class="sg-name-row">
+      <span class="sg-name-lbl">${lbl}</span>
+      <span class="sg-name-val">${val ? esc(val) : '<em>—</em>'}</span>
+    </div>`;
+  }
+  if (d.origin) {
+    html += `<div class="sg-name-row">
+      <span class="sg-name-lbl">Origin</span>
+      <span class="sg-name-val">${esc(d.origin)}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // ── Aliases / vendor names section
+  const vendorAliases = (d.aliases.vendor || []);
+  const otherAliases  = Object.entries(d.aliases)
+    .filter(([lang]) => lang !== 'vendor')
+    .flatMap(([, names]) => names);
+
+  if (vendorAliases.length || otherAliases.length) {
+    html += `<div>
+      <div class="sg-section-title">Known names &amp; aliases</div>
+      <div class="sg-aliases">`;
+    for (const a of vendorAliases) {
+      html += `<span class="sg-alias-tag lang-vendor" title="Vendor name">${esc(a)}</span>`;
+    }
+    for (const a of otherAliases) {
+      html += `<span class="sg-alias-tag">${esc(a)}</span>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // ── Products section
+  if (d.total_products > 0) {
+    html += `<div><div class="sg-section-title">Available from vendors</div>`;
+    for (const [cat, products] of Object.entries(d.products_by_cat)) {
+      html += `<div class="sg-product-cat">
+        <div class="sg-product-cat-name">${esc(cat)}</div>`;
+      for (const p of products) {
+        const stockClass = p.in_stock ? 'in-stock' : 'out-stock';
+        const detail = [p.format, p.grade].filter(Boolean).join(' · ');
+        html += `<div class="sg-product-row">
+          <div class="sg-product-stock ${stockClass}" title="${p.in_stock ? 'In stock' : 'Out of stock'}"></div>
+          <div class="sg-product-vendor">${p.vendor_flag} ${esc(p.vendor)}</div>
+          ${detail ? `<div class="sg-product-format">${esc(detail)}</div>` : ''}
+          <div class="sg-product-price">${p.price.toFixed(2)} ${p.currency}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div>
+      <div class="sg-section-title">Availability</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin:0;">
+        This species is not currently available from any vendor in the catalogue.
+      </p>
+    </div>`;
+  }
+
+  document.getElementById('sg-drawer-body').innerHTML = html;
+}
+
+function closeDrawer() {
+  document.getElementById('sg-drawer-backdrop').classList.remove('is-open');
+  if (state.activeId) {
+    const card = document.getElementById(`sg-card-${state.activeId}`);
+    if (card) card.classList.remove('is-active');
+    state.activeId = null;
+  }
+}
+
+// ── Search + filter wiring ────────────────────────────────────
+document.getElementById('sg-search').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.q    = this.value.trim();
+    state.page = 1;
+    loadGrid();
+  }, 280);
+});
+
+document.querySelectorAll('.sg-filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.sg-filter-btn').forEach(b => b.classList.remove('is-active'));
+    this.classList.add('is-active');
+    state.filter = this.dataset.filter;
+    state.page   = 1;
+    loadGrid();
+  });
+});
+
+document.getElementById('sg-drawer-close').addEventListener('click', closeDrawer);
+document.getElementById('sg-drawer-backdrop').addEventListener('click', function(e) {
+  if (e.target === this) closeDrawer();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+// ── Utilities ─────────────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtPrice(p) {
+  return p != null ? p.toFixed(0) + ' SEK' : '';
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+loadGrid();
+</script>
+{% endblock %}

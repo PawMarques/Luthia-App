@@ -19,6 +19,7 @@ from routes.builds    import builds_bp
 from routes.images    import images_bp
 from routes.templates import templates_bp
 from routes.vendors    import vendors_bp
+from routes.species    import species_bp
 
 
 def create_app(test_config: Optional[dict] = None) -> Flask:
@@ -58,6 +59,7 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
     app.register_blueprint(images_bp)
     app.register_blueprint(templates_bp)
     app.register_blueprint(vendors_bp)
+    app.register_blueprint(species_bp)
 
     @app.route('/')
     def index():

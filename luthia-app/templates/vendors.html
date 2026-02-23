@@ -444,12 +444,15 @@
         </div>
 
         <div class="vendor-actions">
-          <button class="btn-vendor btn-vendor--accent" onclick="openEditModal({{ vendor.vendor_id }})">Edit</button>
+          <button class="btn-vendor btn-vendor--accent"
+                  data-vendor-id="{{ vendor.vendor_id }}"
+                  onclick="openEditModal(this.dataset.vendorId)">Edit</button>
           {% if vendor.website %}
             <a href="{{ vendor.website }}" target="_blank" rel="noopener" class="btn-vendor">Visit Site ↗</a>
           {% endif %}
           <button class="btn-vendor {% if vendor.active %}btn-vendor--danger{% endif %}"
-                  onclick="toggleActive({{ vendor.vendor_id }})">
+                  data-vendor-id="{{ vendor.vendor_id }}"
+                  onclick="toggleActive(this.dataset.vendorId)">
             {{ 'Deactivate' if vendor.active else 'Reactivate' }}
           </button>
         </div>
