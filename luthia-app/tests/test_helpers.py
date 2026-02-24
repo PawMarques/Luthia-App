@@ -178,15 +178,15 @@ def _image(**kwargs):
 
 
 def test_fmt_image_upload_builds_static_path():
-    """An 'upload' image must produce a /static/product-images/<filename> src URL.
+    """An 'upload' image must produce a /uploads/<filename> src URL.
 
     The browse panel builds <img src="..."> tags directly from this value, so
-    the path must be rooted at /static/product-images/.
+    the path must be rooted at /uploads/.
     """
     img    = _image(source_type='upload', filename='42_deadbeef.jpg')
     result = fmt_image(img)
 
-    assert result['src'] == '/static/product-images/42_deadbeef.jpg'
+    assert result['src'] == '/uploads/42_deadbeef.jpg'
     assert result['source_type'] == 'upload'
     assert result['image_id'] == 1
 

@@ -113,8 +113,8 @@ def test_post_file_upload_saves_record(client, seed_db):
     img = body['image']
     assert img['source_type'] == 'upload'
     assert img['caption']     == 'Upload test'
-    # The src must follow the /static/product-images/<filename> pattern
-    assert img['src'].startswith('/static/product-images/')
+    # The src must follow the /uploads/<filename> pattern
+    assert img['src'].startswith('/uploads/')
 
 
 def test_post_file_upload_disallowed_extension_returns_400(client, seed_db):

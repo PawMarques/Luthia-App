@@ -312,6 +312,13 @@ This is a personal project, but suggestions are welcome!
 
 ---
 
+## Migration
+
+If upgrading from a previous version, move any existing images from
+`luthia-app/static/product-images/` to `~/luthia-data/images/`
+
+---
+
 ## 📝 Version History
 
 ### v1.0 (Current)

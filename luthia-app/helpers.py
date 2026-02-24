@@ -133,7 +133,7 @@ def fmt_dims(product) -> str:
 def fmt_image(img) -> dict:
     """Serialise a ProductImage ORM object to a plain dict for JSON API responses."""
     src = (
-        f'/static/product-images/{img.filename}'
+        f'/uploads/{img.filename}'
         if img.source_type == 'upload'
         else img.url or ''
     )

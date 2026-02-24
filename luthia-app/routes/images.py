@@ -9,7 +9,7 @@ Provides:
 import os
 import uuid
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_from_directory
 
 from helpers import allowed_file, api_error, fmt_image
 from models import Product, ProductImage, db
@@ -20,6 +20,11 @@ images_bp = Blueprint('images', __name__)
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+@images_bp.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
 
 @images_bp.route('/api/products/<int:product_id>/images', methods=['POST'])
 def api_image_upload(product_id):
