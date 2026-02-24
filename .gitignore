@@ -6,7 +6,7 @@
 
 # Folders
 luthia-data/
-ideas
+ideas/
 
 # Files
 generate_file_list.py
