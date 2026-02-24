@@ -61,27 +61,11 @@ def browse():
         .all()
     )
 
-    species_opts = '<option value="">All species</option>\n' + ''.join(
-        f'<option value="{s.species_id}">'
-        f'{s.commercial_name or s.scientific_name} ({cnt})</option>\n'
-        for s, cnt in species_list
-    )
-    vendor_opts = '<option value="">All vendors</option>\n' + ''.join(
-        f'<option value="{v.vendor_id}">'
-        f'{v.name} · {v.country} {VENDOR_FLAGS.get(v.country, "")} ({cnt})</option>\n'
-        for v, cnt in vendors
-    )
-    cat_opts = '<option value="">All categories</option>\n' + ''.join(
-        f'<option value="{c.category_id}" data-name="{c.name}">'
-        f'{c.name} ({cnt})</option>\n'
-        for c, cnt in categories
-    )
-
     return render_template(
         'index.html',
-        species_opts=species_opts,
-        vendor_opts=vendor_opts,
-        cat_opts=cat_opts,
+        species_list=species_list,
+        vendors=vendors,
+        categories=categories,
         total_products=Product.query.count(),
         vendor_count=len(vendors),
         active_nav='browse',
