@@ -17,6 +17,7 @@ from helpers import (
     VENDOR_FLAGS,
     fmt_dims,
     fmt_image,
+    get_or_create,
     paginate,
     staleness_info,
 )
@@ -294,10 +295,12 @@ def api_product_edit(product_id):
         p.product_url = data['product_url'].strip() or None
 
     if 'format' in data:
-        p.format_id = _get_or_create_format(data['format'].strip())
+        name = data['format'].strip()
+        p.format_id = get_or_create(Format, name=name).format_id if name else None
 
     if 'grade' in data:
-        p.grade_id = _get_or_create_grade(data['grade'].strip())
+        name = data['grade'].strip()
+        p.grade_id = get_or_create(Grade, name=name).grade_id if name else None
 
     if errors:
         return jsonify({'ok': False, 'errors': errors}), 400
@@ -307,25 +310,3 @@ def api_product_edit(product_id):
     return jsonify({'ok': True})
 
 
-def _get_or_create_format(name: str):
-    """Return the format_id for *name*, creating a new Format row if needed."""
-    if not name:
-        return None
-    fmt = Format.query.filter_by(name=name).first()
-    if not fmt:
-        fmt = Format(name=name)
-        db.session.add(fmt)
-        db.session.flush()
-    return fmt.format_id
-
-
-def _get_or_create_grade(name: str):
-    """Return the grade_id for *name*, creating a new Grade row if needed."""
-    if not name:
-        return None
-    grade = Grade.query.filter_by(name=name).first()
-    if not grade:
-        grade = Grade(name=name)
-        db.session.add(grade)
-        db.session.flush()
-    return grade.grade_id

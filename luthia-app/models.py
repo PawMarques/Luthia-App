@@ -114,7 +114,14 @@ class ProductImage(db.Model):
 
 class Product(db.Model):
     __tablename__ = 'products'
-    
+
+    __table_args__ = (
+        db.Index('ix_products_species_id',  'species_id'),
+        db.Index('ix_products_vendor_id',   'vendor_id'),
+        db.Index('ix_products_category_id', 'category_id'),
+        db.Index('ix_products_price',       'price'),
+    )
+
     product_id = db.Column(db.Integer, primary_key=True)
     species_id = db.Column(db.Integer, db.ForeignKey('species.species_id'), nullable=False)
     vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.vendor_id'), nullable=False)

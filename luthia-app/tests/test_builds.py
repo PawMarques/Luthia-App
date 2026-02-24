@@ -35,11 +35,11 @@ def test_builds_new_get_returns_200(client, seed_db):
 
 
 def test_builds_new_post_valid_creates_build_and_responds(client, seed_db):
-    """POST /builds/new with complete form data must create a Build row and return a JS redirect.
+    """POST /builds/new with complete form data must create a Build row and redirect to it.
 
-    The route returns a 200 with a <script>window.location=...></script> body
-    rather than an HTTP redirect; the test asserts that the build was persisted
-    and that the response body points to the new build's URL.
+    The route returns a 302 HTTP redirect to /builds/<new_id>; the test asserts
+    that the build was persisted and that the Location header points to the new
+    build's URL.
     """
     template = seed_db['template']
     variant  = seed_db['variant']
@@ -50,9 +50,9 @@ def test_builds_new_post_valid_creates_build_and_responds(client, seed_db):
         'name':        'Integration Test Build',
     })
 
-    assert response.status_code == 200
-    # The route embeds a JS redirect pointing to /builds/<new_id>
-    assert b'/builds/' in response.data
+    assert response.status_code == 302
+    # The Location header must point to /builds/<new_id>
+    assert b'/builds/' in response.headers['Location'].encode()
 
     # A new Build row must exist in the database
     builds = Build.query.filter_by(name='Integration Test Build').all()
@@ -75,8 +75,8 @@ def test_builds_new_post_missing_name_returns_form(client, db_session):
     })
 
     assert response.status_code == 200
-    # A JS redirect would include '/builds/<id>'; the raw form HTML won't
-    assert b'window.location="/builds/' not in response.data
+    # A successful redirect would be 302; re-rendered form stays at 200
+    assert response.status_code != 302
 
     # No Build row should have been written
     from models import Build

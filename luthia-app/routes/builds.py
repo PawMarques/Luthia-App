@@ -10,9 +10,9 @@ Provides:
   DELETE /api/builds/<id>                     — delete a build and all its parts
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from helpers import ROLE_CATEGORIES, THICKNESS_WARN_LIMIT, VENDOR_FLAGS
 from models import (
@@ -69,7 +69,7 @@ def builds_new():
                     db.session.add(BuildPart(build_id=build.build_id, role=role))
 
                 db.session.commit()
-                return f'<script>window.location="/builds/{build.build_id}"</script>'
+                return redirect(url_for('builds.builds_detail', build_id=build.build_id))
 
     templates = InstrumentTemplate.query.order_by(InstrumentTemplate.name).all()
 
@@ -187,7 +187,7 @@ def api_build_part_update(build_id, part_id):
 
     _check_thickness_warning(build)
     build.compute_total()
-    build.updated_at = datetime.utcnow()
+    build.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
 
     return jsonify({'ok': True, 'total': build.total_price})

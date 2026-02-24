@@ -130,6 +130,17 @@ def fmt_dims(product) -> str:
     return (' × '.join(parts) + ' mm') if parts else ''
 
 
+def get_or_create(model, **kwargs):
+    """Return an existing row matching *kwargs*, or insert and flush a new one."""
+    instance = model.query.filter_by(**kwargs).first()
+    if not instance:
+        instance = model(**kwargs)
+        from models import db
+        db.session.add(instance)
+        db.session.flush()
+    return instance
+
+
 def fmt_image(img) -> dict:
     """Serialise a ProductImage ORM object to a plain dict for JSON API responses."""
     src = (
