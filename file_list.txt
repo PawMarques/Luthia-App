@@ -1,3 +1,4 @@
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.env.example
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.gitignore
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/Luthia-App.code-workspace
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/README.md
@@ -23,6 +24,7 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood-
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood_database_schema.png
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood_db_diagram.md
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/app.py
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/config.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/fret_calc_excel.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/helpers.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/import_data.py
@@ -30,6 +32,7 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/luthia.d
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/migrate_images.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/models.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/pytest.ini
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/requirements.txt
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/seed_templates.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/routes/__init__.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/routes/browse.py
@@ -57,6 +60,8 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/template
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/builds/detail.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/builds/index.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/builds/new.html
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/errors/404.html
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/errors/500.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/macros/builds.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/macros/instrument_templates.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/templates/edit.html
@@ -64,5 +69,8 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/template
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/conftest.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_browse.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_builds.py
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_fret.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_helpers.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_images.py
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_species.py
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_vendors.py
