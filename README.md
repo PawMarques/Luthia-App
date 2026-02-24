@@ -1,359 +1,174 @@
-# Tonewood App
+# Luthia — Where Tone Begins
 
-A web-based application for comparing tonewood prices across multiple international vendors. Built with Python, Flask, and SQLite.
+> A web application for luthiers to compare European tonewood prices, explore wood species, and plan instrument builds.
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
-![Python](https://img.shields.io/badge/python-3.9+-green)
-![License](https://img.shields.io/badge/license-MIT-orange)
+**Domain:** [luthia.app](https://luthia.app) · **Version:** 2.0 · **Status:** Active development
 
 ---
 
-## 📋 Overview
+## What It Does
 
-This system transforms your Excel-based tonewood pricing data into a powerful, searchable web application. Compare prices across vendors, filter by wood species, categories, and formats, and make informed purchasing decisions instantly.
+Luthia is a personal tool built by a luthier-programmer. It solves a real problem in instrument building: tonewood prices vary significantly across European suppliers, and comparing them manually is tedious. The app brings that data together in one place, alongside tools that support the full build planning workflow.
 
-### Key Features
+**Core features:**
 
-✅ **969 products** from 4 international vendors  
-✅ **Dynamic search & filtering** - Species, vendor, category, format, price  
-✅ **Smart format filtering** - Shows only formats available for selected category  
-✅ **Sortable columns** - Click any header to sort  
-✅ **Pagination** - Browse 50 products per page  
-✅ **Collapsible interface** - Hide/show filters as needed  
-✅ **Consistent pricing** - All prices displayed in SEK  
-✅ **Direct product links** - Click through to vendor websites  
+- **Browse & Compare** — Search and filter 969 products across 4 vendors by species, category, grade, and price. Live filtering with no page reloads.
+- **Species Reference** — A database of 103 wood species with scientific names, commercial names in English, Swedish, and Portuguese, geographic origin, and CITES conservation status.
+- **Build Planner** — Save instrument projects, assign tonewoods to each part slot (body, neck, fretboard, top), and get automatic warnings for thickness conflicts or missing dimensions.
+- **Fret Calculator** — Equal temperament fret position calculator with `.xlsx` export.
+- **Vendor Management** — Track supplier details, currencies, and active status. Soft-delete preserves product history.
 
 ---
 
-## 🗄️ Database Structure
+## Tech Stack
 
-### Core Tables
-- **Species** (103 wood species) - Master reference for all wood types
-- **Products** (969 items) - Individual product listings
-- **Vendors** (4 suppliers) - Sunda Byggvaror, Guitars & Woods, Rivolta, Forest Guitar Supplies
+| Layer | Technology |
+|---|---|
+| Backend | Python / Flask 3.x |
+| Database | SQLite via SQLAlchemy ORM |
+| Templates | Jinja2 (server-rendered HTML) |
+| Frontend | Vanilla JS + CSS custom properties |
+| Data import | Pandas + openpyxl (Excel → SQLite) |
+| Testing | pytest + Flask test client |
 
-### Lookup Tables
-- **Categories** (5 types) - Body Blank, Neck Blank, Fretboard Blank, Top Blank, Carpentry lumber
-- **Grades** (Quality levels) - A, AA, AAA, Master, etc.
-- **Formats** (123 variations) - Cut types, configurations, specifications
-- **Units** (4 types) - per piece, per set, per kg, per m
-
-### Benefits Over Excel
-- **80% reduction** in duplicate data
-- **Search speed**: Manual browsing (10-15 min) → Instant (<0.1 sec)
-- **Data integrity**: No typos, consistent categories
-- **Easy updates**: Change vendor info once, affects all products
-- **Scalable**: Handles thousands of products effortlessly
+No JavaScript framework. No build step. Deliberately minimal on the frontend — the complexity lives in the data and the domain logic.
 
 ---
 
-## 🚀 Quick Start
+## Project Structure
+
+```
+luthia-app/          # All application code
+├── app.py           # Application factory (create_app)
+├── config.py        # DevelopmentConfig / TestingConfig
+├── models.py        # SQLAlchemy models
+├── helpers.py       # Shared utilities (paginate, api_error, staleness_info…)
+├── scripts/         # CLI tools for data management and one-off operations
+│   ├── import_data.py        # Imports vendor Excel files into the database
+│   ├── fret_calc_excel.py    # Generates a static fret placement reference workbook
+│   ├── migrate_images.py     # One-off migration: creates the product_images table
+│   └── seed_templates.py     # Seeds instrument templates and dimensional variants
+├── routes/          # Flask Blueprints — one file per feature
+│   ├── browse.py    # Product catalogue + /api/products
+│   ├── species.py   # Species guide + /api/species
+│   ├── builds.py    # Build planner + /api/builds
+│   ├── fret.py      # Fret calculator + /api/fret
+│   ├── vendors.py   # Vendor CRUD + /api/vendors
+│   ├── templates.py # Instrument template management
+│   └── images.py    # Image upload + /uploads/<filename>
+├── templates/       # Jinja2 HTML templates
+├── static/          # CSS and JS files
+└── tests/           # pytest suite
+
+luthia-data/         # Persistent data — survives redeployment
+├── luthia.db        # Live SQLite database
+└── product-images/  # Uploaded product photos
+
+data-sources/        # Excel vendor catalogs (source of truth)
+documents/           # Architecture docs, schema diagrams
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- macOS (tested on macOS 10.15+)
-- Python 3.9 or higher
-- Your Excel file: `Tonewood_Species__With_Sources_v2_2.xlsx`
 
-### Installation (5 minutes)
+- Python 3.10+
+- pip
 
-1. **Install dependencies:**
+### Setup
+
 ```bash
-pip install flask flask-sqlalchemy pandas openpyxl
+# Clone and install dependencies
+git clone <repo-url>
+cd luthia-app
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env — set SECRET_KEY, APP_ENV, UPLOAD_FOLDER
+
+# Run the development server
+flask run
 ```
 
-2. **Create project folder:**
+The app will be available at `http://localhost:5000`. The database and upload folder are created automatically on first run.
+
+### Importing Data
+
+Vendor catalogs are maintained as Excel files in `data-sources/`. To import:
+
 ```bash
-mkdir ~/tonewood-app
-cd ~/tonewood-app
+python scripts/import_data.py
 ```
 
-3. **Add the three Python files:**
-   - `models.py` - Database structure
-   - `app.py` - Web application
-   - `import_data.py` - Data import script
+The tool shows a diff report (new items, price changes, removals) before writing anything. Use `--dry-run` to preview only. Each vendor import is transactional — a failure rolls back without affecting other vendors.
 
-4. **Add your Excel file to the folder**
+---
 
-5. **Import your data:**
+## Running Tests
+
 ```bash
-python3 import_data.py
-```
-   - Choose option 2
-   - Enter: `Tonewood_Species__With_Sources_v2_2.xlsx`
-
-6. **Launch the application:**
-```bash
-python3 app.py
+pytest
 ```
 
-7. **Open in browser:**
-```
-http://localhost:5000
-```
+Tests use an in-memory SQLite database — the live `luthia.db` is never touched. The suite covers all seven route modules and shared helper functions.
 
 ---
 
-## 💡 How to Use
+## Configuration
 
-### Basic Search
-1. Select filters (Species, Vendor, Category, Format, Max Price)
-2. Click "🔍 Search"
-3. Results appear instantly, sorted by price
+Configuration is class-based (`config.py`) and selected via the `APP_ENV` environment variable.
 
-### Advanced Features
-
-**Sort by any column:**
-- Click column headers (Species, Vendor, Category, Format, Grade, Price)
-- Click again to reverse sort order
-- Arrow indicators show current sort
-
-**Smart Format Filtering:**
-- Select a Category first
-- Format dropdown appears automatically
-- Shows only formats available for that category
-
-**Browse All Products:**
-- Use pagination at bottom
-- Click page numbers or Previous/Next
-- Shows 50 products per page
-
-**Collapse Filters:**
-- Click "▼ Hide Filters" to maximize table space
-- Click "▶ Show Filters" to restore
+| Variable | Purpose | Default |
+|---|---|---|
+| `SECRET_KEY` | Flask session signing | `dev-only-insecure-key` |
+| `APP_ENV` | `development` or `testing` | `development` |
+| `UPLOAD_FOLDER` | Path for uploaded product images | `~/luthia-data/images` |
 
 ---
 
-## 📊 Example Queries
+## Database at a Glance
 
-### Find Cheapest Mahogany Neck Blanks
-1. Species: Select "Mahogany"
-2. Category: Select "Neck Blank"
-3. Click Search
-4. Results sorted by price (cheapest first)
+| Metric | Count |
+|---|---|
+| Products | 969 |
+| Active vendors | 4 |
+| Wood species | 103 |
+| Countries covered | 4 (SE, PT, IT, ES) |
 
-### Compare All Vendors for Body Blanks
-1. Category: Select "Body Blank"
-2. Click Search
-3. Click "Vendor" column to group by vendor
-
-### Find 2-Piece Tops Under 500 SEK
-1. Category: Select "Top Blank"
-2. Format: Select "2-piece" (appears after selecting category)
-3. Max Price: Enter "500"
-4. Click Search
+The full schema is documented in `documents/luthia-architecture-overview.md` and the schema diagram at `documents/luthiadatabaseschema.png`.
 
 ---
 
-## 🔄 Updating Data
+## Design Decisions Worth Knowing
 
-### When Prices Change
-
-1. **Update your Excel file** as usual
-2. **Convert EUR to SEK** for Rivolta and Forest Guitar Supplies
-   - Keep both columns: "Price (EUR)" and "Price (SEK)"
-   - Current rate: ~1 EUR = 11.5 SEK
-3. **Delete old database:**
-```bash
-rm tonewood.db
-```
-4. **Re-import:**
-```bash
-python3 import_data.py
-```
-
-### Adding New Vendors
-
-1. **Add new sheet** to Excel file
-2. **Format columns** like existing vendor sheets
-3. **Update `import_data.py`:**
-   - Add to vendors list in `run_import()` function
-4. **Run import script**
+- **Excel as source of truth.** Vendor catalogs live in spreadsheets — the natural format for this data. The import pipeline reads them directly.
+- **SQLite.** Single-user local tool. No database server to manage; the entire database is one file.
+- **Blueprint architecture.** The app was decomposed from a 1,098-line monolith into focused route modules. Each Blueprint is independently testable.
+- **Soft-delete for vendors.** Toggling an `active` flag preserves all product history and allows reactivation.
+- **Image storage outside the app directory.** `luthia-data/product-images/` is decoupled from source code so uploads survive redeployment.
+- **No JS framework.** Vanilla JS with the Fetch API covers all interaction needs without a build toolchain.
 
 ---
 
-## 🛠️ Technology Stack
+## Branding
 
-**Backend:**
-- Python 3.9+
-- Flask (Web framework)
-- SQLAlchemy (ORM)
-- SQLite (Database)
-
-**Frontend:**
-- HTML5
-- CSS3
-- Vanilla JavaScript (no frameworks)
-
-**Data Processing:**
-- Pandas (Excel reading)
-- OpenPyXL (Excel format support)
+- **Typefaces:** Cormorant Light Italic (wordmark/tagline) · IBM Plex Sans + IBM Plex Mono (UI)
+- **Themes:** Five named themes switchable at runtime — Beeswax, Amber (default), Maple, Mahogany, Spruce
+- **Mark:** A cross fleury (cross botonnée), used historically by craft guilds and instrument makers
 
 ---
 
-## 📁 Project Structure
+## Roadmap
 
-```
-tonewood-app/
-├── app.py                  # Main Flask application (300+ lines)
-├── models.py               # Database models (9 tables)
-├── import_data.py          # Excel import script
-├── tonewood.db            # SQLite database (auto-generated)
-├── Tonewood_Species__With_Sources_v2_2.xlsx
-└── README.md              # This file
-```
+- [ ] Full pytest coverage across all modules
+- [ ] Migrate remaining HTML generation from Python to Jinja2 templates
+- [ ] Persistent sidebar navigation (shadcn dashboard pattern)
+- [ ] Enhanced species database with tonal characteristics
+- [ ] Production deployment configuration
 
 ---
 
-## 🎯 Use Cases
-
-### For Luthiers
-- Compare prices before purchasing
-- Track price changes over time
-- Find alternative suppliers
-- Discover new wood species
-
-### For Suppliers
-- Monitor competitor pricing
-- Identify market gaps
-- Track inventory availability
-
-### For Researchers
-- Analyze pricing trends
-- Study market dynamics
-- Compare regional differences
-
----
-
-## 🔧 Troubleshooting
-
-### Port Already in Use
-If you see "Address already in use":
-```bash
-# Find and kill process on port 5000
-lsof -ti:5000 | xargs kill -9
-```
-
-### Database Issues
-If data looks wrong:
-```bash
-# Reset database
-rm tonewood.db
-python3 import_data.py
-```
-
-### Import Errors
-Common fixes:
-- Verify Excel file is in project folder
-- Check column names match expected format
-- Ensure EUR prices are converted to SEK
-
----
-
-## 📈 Performance
-
-- **Database size**: ~5 MB for 969 products
-- **Query speed**: <100ms for most searches
-- **Page load**: <500ms
-- **Memory usage**: ~50MB
-- **Concurrent users**: Designed for single-user local use
-
----
-
-## 🎨 Customization
-
-### Change Colors
-Edit CSS in `app.py` (around line 25):
-```css
-th { background: #4CAF50; }  /* Green headers */
-```
-
-### Adjust Products Per Page
-In `app.py`, change:
-```python
-per_page = 50  # Change to 25, 100, etc.
-```
-
-### Add New Filters
-1. Add filter HTML in form section
-2. Add query parameter in route
-3. Add filter logic in database query
-
----
-
-## 🚀 Future Enhancements
-
-**Planned Features:**
-- [ ] Export search results to Excel
-- [ ] Price history tracking with graphs
-- [ ] Email alerts for price drops
-- [ ] Multi-currency support with live rates
-- [ ] Favorites/watchlist functionality
-- [ ] Advanced statistics dashboard
-- [ ] Mobile-responsive design
-- [ ] User authentication for multi-user access
-
-**Potential Upgrades:**
-- Migrate to PostgreSQL for multi-user support
-- Add REST API for external integrations
-- Implement automated price scraping
-- Create mobile app (iOS/Android)
-
----
-
-## 🤝 Contributing
-
-This is a personal project, but suggestions are welcome!
-
-**Ideas for improvement:**
-- Better error handling
-- More comprehensive documentation
-- Unit tests
-- Automated Excel format validation
-
----
-
-## Migration
-
-If upgrading from a previous version, move any existing images from
-`luthia-app/static/product-images/` to `~/luthia-data/images/`
-
----
-
-## 📝 Version History
-
-### v1.0 (Current)
-- Initial release
-- 969 products from 4 vendors
-- Full search and filtering
-- Sortable columns
-- Pagination
-- Dynamic format filtering
-
----
-
-## 📄 License
-
-MIT License - Feel free to modify and adapt for your needs.
-
----
-
-## 🙏 Acknowledgments
-
-Built with guidance from Claude (Anthropic)  
-Data sources: Sunda Byggvaror, Guitars & Woods, Rivolta, Forest Guitar Supplies
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check troubleshooting section above
-2. Review implementation guide
-3. Inspect browser console for JavaScript errors
-4. Check terminal output for Python errors
-
----
-
-## 🎸 Happy Luthiery!
-
-May you always find the perfect tonewood at the best price.
+*Luthia · luthia.app · Where tone begins*
