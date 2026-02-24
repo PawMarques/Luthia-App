@@ -10,7 +10,7 @@ Usage:
 import os
 from typing import Optional
 
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, render_template, url_for
 
 from helpers import VENDOR_FLAGS
 from models import db
@@ -62,6 +62,24 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
     app.register_blueprint(vendors_bp)
     app.register_blueprint(species_bp)
     app.register_blueprint(fret_bp)
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return render_template(
+            'errors/404.html',
+            active_nav='',
+            page_title='Luthia · Not Found',
+            breadcrumb=[('Not Found', None)],
+        ), 404
+
+    @app.errorhandler(500)
+    def internal_error(e):
+        return render_template(
+            'errors/500.html',
+            active_nav='',
+            page_title='Luthia · Error',
+            breadcrumb=[('Error', None)],
+        ), 500
 
     @app.route('/')
     def index():

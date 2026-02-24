@@ -7,7 +7,6 @@ Provides:
   PUT /api/products/<id>    — update editable product fields (JSON)
 """
 
-import traceback
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, render_template, request
@@ -39,60 +38,56 @@ def browse():
     Products themselves are loaded asynchronously via /api/products so the
     initial page load stays fast even with a large catalogue.
     """
-    try:
-        species_list = (
-            db.session.query(Species, func.count(Product.product_id).label('cnt'))
-            .join(Product, Product.species_id == Species.species_id)
-            .group_by(Species.species_id)
-            .order_by(Species.commercial_name)
-            .all()
-        )
-        vendors = (
-            db.session.query(Vendor, func.count(Product.product_id).label('cnt'))
-            .join(Product, Product.vendor_id == Vendor.vendor_id)
-            .filter(Vendor.active == True)
-            .group_by(Vendor.vendor_id)
-            .order_by(Vendor.name)
-            .all()
-        )
-        categories = (
-            db.session.query(Category, func.count(Product.product_id).label('cnt'))
-            .join(Product, Product.category_id == Category.category_id)
-            .group_by(Category.category_id)
-            .order_by(Category.name)
-            .all()
-        )
+    species_list = (
+        db.session.query(Species, func.count(Product.product_id).label('cnt'))
+        .join(Product, Product.species_id == Species.species_id)
+        .group_by(Species.species_id)
+        .order_by(Species.commercial_name)
+        .all()
+    )
+    vendors = (
+        db.session.query(Vendor, func.count(Product.product_id).label('cnt'))
+        .join(Product, Product.vendor_id == Vendor.vendor_id)
+        .filter(Vendor.active == True)
+        .group_by(Vendor.vendor_id)
+        .order_by(Vendor.name)
+        .all()
+    )
+    categories = (
+        db.session.query(Category, func.count(Product.product_id).label('cnt'))
+        .join(Product, Product.category_id == Category.category_id)
+        .group_by(Category.category_id)
+        .order_by(Category.name)
+        .all()
+    )
 
-        species_opts = '<option value="">All species</option>\n' + ''.join(
-            f'<option value="{s.species_id}">'
-            f'{s.commercial_name or s.scientific_name} ({cnt})</option>\n'
-            for s, cnt in species_list
-        )
-        vendor_opts = '<option value="">All vendors</option>\n' + ''.join(
-            f'<option value="{v.vendor_id}">'
-            f'{v.name} · {v.country} {VENDOR_FLAGS.get(v.country, "")} ({cnt})</option>\n'
-            for v, cnt in vendors
-        )
-        cat_opts = '<option value="">All categories</option>\n' + ''.join(
-            f'<option value="{c.category_id}" data-name="{c.name}">'
-            f'{c.name} ({cnt})</option>\n'
-            for c, cnt in categories
-        )
+    species_opts = '<option value="">All species</option>\n' + ''.join(
+        f'<option value="{s.species_id}">'
+        f'{s.commercial_name or s.scientific_name} ({cnt})</option>\n'
+        for s, cnt in species_list
+    )
+    vendor_opts = '<option value="">All vendors</option>\n' + ''.join(
+        f'<option value="{v.vendor_id}">'
+        f'{v.name} · {v.country} {VENDOR_FLAGS.get(v.country, "")} ({cnt})</option>\n'
+        for v, cnt in vendors
+    )
+    cat_opts = '<option value="">All categories</option>\n' + ''.join(
+        f'<option value="{c.category_id}" data-name="{c.name}">'
+        f'{c.name} ({cnt})</option>\n'
+        for c, cnt in categories
+    )
 
-        return render_template(
-            'index.html',
-            species_opts=species_opts,
-            vendor_opts=vendor_opts,
-            cat_opts=cat_opts,
-            total_products=Product.query.count(),
-            vendor_count=len(vendors),
-            active_nav='browse',
-            breadcrumb=[('Browse Woods', None)],
-            page_title='Luthia · Browse Woods',
-        )
-
-    except Exception as e:
-        return f'<h1>Error</h1><p>{e}</p><pre>{traceback.format_exc()}</pre>'
+    return render_template(
+        'index.html',
+        species_opts=species_opts,
+        vendor_opts=vendor_opts,
+        cat_opts=cat_opts,
+        total_products=Product.query.count(),
+        vendor_count=len(vendors),
+        active_nav='browse',
+        breadcrumb=[('Browse Woods', None)],
+        page_title='Luthia · Browse Woods',
+    )
 
 
 # ---------------------------------------------------------------------------
