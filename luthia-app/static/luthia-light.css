@@ -43,6 +43,15 @@
   --ui-text-3:       #78716c;
   --ui-text-4:       #a8a29e;
   --ui-text-5:       #d6d3d1;
+  /* Component tokens — light overrides */
+  --panel-bg:       #ffffff;
+  --border-color:   #e7e5e4;
+  --text-primary:   #1c1917;
+  --text-secondary: #44403c;
+  --text-muted:     #a8a29e;
+  --hover-bg:       rgba(0,0,0,0.04);
+  --input-bg:       #fafaf9;
+  --surface-2:      rgba(0,0,0,0.03);
 }
 
 /* Re-tune accent-dim for light backgrounds */
@@ -453,3 +462,26 @@
 [data-mode="light"] .tpl-edit-variant       { background: #ffffff; border-color: #e7e5e4; }
 [data-mode="light"] .tpl-edit-variant-title { color: #78716c; }
 [data-mode="light"] .tpl-edit-section-label { color: #a8a29e; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PAGE CHROME
+══════════════════════════════════════════════════════════════ */
+
+[data-mode="light"] .page-title     { color: #1c1917; }
+[data-mode="light"] .page-title-sub { color: #a8a29e; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   VENDORS / SPECIES / FRET — light mode overrides
+   Most styles in these pages already use CSS variables
+   (--panel-bg, --border-color, etc.) and adapt automatically.
+   Only hardcoded dark values need explicit overrides here.
+══════════════════════════════════════════════════════════════ */
+
+/* Vendor page */
+[data-mode="light"] .btn-cancel:hover         { background: #f0efee; }
+[data-mode="light"] .toast                    { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+
+/* Out-of-stock badge uses a white-alpha that is invisible on light bg */
+[data-mode="light"] .badge-out-stock          { background: #f0efee; }

@@ -14,21 +14,7 @@
 
 /* ── Page header ─────────────────────────────────────────── */
 .sg-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.sg-title {
-  font-family: 'Cormorant', 'Georgia', serif;
-  font-style: italic;
-  font-size: 1.75rem;
-  font-weight: 300;
-  color: var(--text-primary);
-  margin: 0 0 4px;
 }
 
 .sg-meta {
@@ -532,6 +518,36 @@
   color: var(--text-muted);
   font-size: 0.85rem;
 }
+
+/* ── Helpers ───────────────────────────────────────────── */
+.sg-origin--empty  { opacity: 0.4; }
+
+.sg-page-ellipsis  { color: var(--text-muted); padding: 0 4px; }
+
+.badge-in-stock {
+  font-size: 0.7rem;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #34d399 12%, transparent);
+  border: 1px solid color-mix(in srgb, #34d399 28%, transparent);
+  color: #34d399;
+}
+
+.badge-out-stock {
+  font-size: 0.7rem;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-muted) 8%, transparent);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.sg-unavailable-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
 </style>
 {% endblock %}
 
@@ -540,13 +556,11 @@
 
   <!-- Page header -->
   <div class="sg-header">
-    <div>
-      <h1 class="sg-title">Species Guide</h1>
-      <div class="sg-meta">
-        <span class="sg-meta-item"><strong>{{ total_species }}</strong> species</span>
-        <span class="sg-meta-item"><strong>{{ in_stock_count }}</strong> available from vendors</span>
-        <span class="sg-meta-item"><strong>{{ cites_count }}</strong> CITES listed</span>
-      </div>
+    <div class="page-title">Species Guide</div>
+    <div class="sg-meta">
+      <span class="sg-meta-item"><strong>{{ total_species }}</strong> species</span>
+      <span class="sg-meta-item"><strong>{{ in_stock_count }}</strong> available from vendors</span>
+      <span class="sg-meta-item"><strong>{{ cites_count }}</strong> CITES listed</span>
     </div>
   </div>
 
@@ -677,7 +691,7 @@ function renderCard(s) {
         </svg>
         ${esc(s.origin)}
        </div>`
-    : `<div class="sg-origin" style="opacity:0.4">—</div>`;
+    : `<div class="sg-origin sg-origin--empty">—</div>`;
 
   let footHtml;
   if (s.total_products > 0) {
@@ -720,7 +734,7 @@ function renderPagination(page, pages) {
   const range = pageRange(page, pages);
   let prev = null;
   for (const p of range) {
-    if (prev !== null && p - prev > 1) html += `<span style="color:var(--text-muted);padding:0 4px">…</span>`;
+    if (prev !== null && p - prev > 1) html += `<span class="sg-page-ellipsis">…</span>`;
     html += `<button class="sg-page-btn ${p === page ? 'is-current' : ''}" onclick="goPage(${p})">${p}</button>`;
     prev = p;
   }
@@ -774,8 +788,8 @@ function renderDrawer(d) {
   if (d.cites_listed) badges.push(`<span class="badge-cites">CITES Listed</span>`);
   if (d.total_products > 0) {
     const inStk = d.in_stock_count > 0
-      ? `<span style="font-size:0.7rem;padding:2px 9px;border-radius:10px;background:color-mix(in srgb,#34d399 12%,transparent);border:1px solid color-mix(in srgb,#34d399 28%,transparent);color:#34d399;">${d.in_stock_count} in stock</span>`
-      : `<span style="font-size:0.7rem;padding:2px 9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border-color);color:var(--text-muted);">out of stock</span>`;
+      ? `<span class="badge-in-stock">${d.in_stock_count} in stock</span>`
+      : `<span class="badge-out-stock">out of stock</span>`;
     badges.push(inStk);
   }
   document.getElementById('drawer-badges').innerHTML = badges.join('');
@@ -850,7 +864,7 @@ function renderDrawer(d) {
   } else {
     html += `<div>
       <div class="sg-section-title">Availability</div>
-      <p style="font-size:0.82rem;color:var(--text-muted);font-style:italic;margin:0;">
+      <p class="sg-unavailable-note">
         This species is not currently available from any vendor in the catalogue.
       </p>
     </div>`;

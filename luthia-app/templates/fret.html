@@ -12,19 +12,10 @@
   max-width: 1100px;
 }
 
-.fc-title {
-  font-family: 'Cormorant', 'Georgia', serif;
-  font-style: italic;
-  font-size: 1.75rem;
-  font-weight: 300;
-  color: var(--text-primary);
-  margin: 0 0 4px;
-}
-
-.fc-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 28px;
+/* Panel export button is full-width in the left column */
+.fc-panel .fc-export-btn {
+  width: 100%;
+  text-align: center;
 }
 
 /* ── Two-column layout ───────────────────────────────────────── */
@@ -393,8 +384,12 @@ tr.is-octave .fc-fret-num {
 {% block content %}
 <div class="fc-wrap">
 
-  <h1 class="fc-title">Fret Calculator</h1>
-  <p class="fc-subtitle">Compute precise fret positions using the equal-temperament formula</p>
+  <div class="page-title-bar">
+    <div>
+      <div class="page-title">Fret Calculator</div>
+      <div class="page-title-sub">Compute precise fret positions using the equal-temperament formula</div>
+    </div>
+  </div>
 
   <div class="fc-layout">
 
@@ -472,8 +467,7 @@ tr.is-octave .fc-fret-num {
       <button class="fc-calc-btn" onclick="calculate()">Calculate fret positions</button>
 
       <!-- Export -->
-      <button class="fc-export-btn" id="fc-export-btn" onclick="exportXlsx()" disabled
-              style="width:100%;text-align:center;">⬇ Export to Excel</button>
+      <button class="fc-export-btn" id="fc-export-btn" onclick="exportXlsx()" disabled>⬇ Export to Excel</button>
 
     </div>
 

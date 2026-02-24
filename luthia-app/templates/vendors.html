@@ -11,27 +11,33 @@
 }
 
 .vendors-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 28px;
-  gap: 16px;
-  flex-wrap: wrap;
 }
 
-.vendors-title {
-  font-family: 'Cormorant', 'Georgia', serif;
-  font-style: italic;
-  font-size: 1.75rem;
-  font-weight: 300;
-  color: var(--text-primary);
-  margin: 0;
+/* Header action button — matches .btn-new-build style from builds pages */
+.btn-new-vendor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  white-space: nowrap;
 }
+.btn-new-vendor:hover { filter: brightness(1.1); }
 
-.vendors-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 3px;
+/* Modal form fields wrapper */
+.vendor-modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* ── Vendor grid ─────────────────────────────────────────── */
@@ -387,19 +393,22 @@
 </style>
 {% endblock %}
 
+{% block header_actions %}
+<div class="header-actions">
+  <button class="btn-new-vendor" id="btn-add-vendor">+ Add Vendor</button>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="vendors-wrap">
 
   <div class="vendors-header">
-    <div>
-      <h1 class="vendors-title">Vendors</h1>
-      <div class="vendors-subtitle">
-        {{ vendors | length }} vendor{{ 's' if vendors | length != 1 else '' }} ·
-        {% set active_count = vendors | selectattr('0.active') | list | length %}
-        {{ active_count }} active
-      </div>
+    <div class="page-title">Vendors</div>
+    <div class="page-title-sub">
+      {{ vendors | length }} vendor{{ 's' if vendors | length != 1 else '' }} ·
+      {% set active_count = vendors | selectattr('0.active') | list | length %}
+      {{ active_count }} active
     </div>
-    <button class="btn-primary" id="btn-add-vendor">+ Add Vendor</button>
   </div>
 
   <!-- Vendor grid -->
@@ -478,7 +487,7 @@
     <div class="vendor-modal-title" id="modal-title">Add Vendor</div>
     <input type="hidden" id="modal-vendor-id" value="">
 
-    <div style="display:flex;flex-direction:column;gap:12px;">
+    <div class="vendor-modal-fields">
       <div class="vef-field">
         <label class="vef-label">Vendor name *</label>
         <input class="vef-input" id="modal-name" placeholder="e.g. Guitars & Woods" autocomplete="off">
