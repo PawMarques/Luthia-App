@@ -10,8 +10,12 @@ Usage:
 import os
 from typing import Optional
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, url_for
 
+load_dotenv()
+
+from config import CONFIG_MAP, DevelopmentConfig
 from helpers import VENDOR_FLAGS
 from models import db
 from routes.browse    import browse_bp
@@ -35,14 +39,10 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
     """
     app = Flask(__name__)
 
-    basedir = os.path.abspath(os.path.dirname(__file__))
+    config_class = CONFIG_MAP.get(os.environ.get('APP_ENV', ''), DevelopmentConfig)
+    app.config.from_object(config_class)
 
-    app.config['SQLALCHEMY_DATABASE_URI']  = f'sqlite:///{os.path.join(basedir, "luthia.db")}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-only-insecure-key')
-    app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'product-images')
-
-    # Apply test overrides before makedirs and db.init_app so they take effect.
+    # Apply test overrides after class config so they take full effect.
     if test_config:
         app.config.update(test_config)
 
