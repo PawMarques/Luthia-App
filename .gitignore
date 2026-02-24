@@ -4,5 +4,6 @@
 .env
 tonewood-app/.DS_Store
 luthia-app/static/product-images/
-ideas
-luthia-data/product-images
+ideas/
+luthia-data/product-images/
+luthia-data/raw-data/
