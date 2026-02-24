@@ -23,7 +23,7 @@ class BaseConfig:
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(basedir, "luthia.db")}'
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(os.path.dirname(basedir), "luthia-data", "luthia.db")}'
 
 
 class TestingConfig(BaseConfig):

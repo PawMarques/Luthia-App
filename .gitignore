@@ -1,10 +1,12 @@
+# macOS
 .DS_Store
-.DS_Store
-.DS_Store
+
+# Environment
 .env
-tonewood-app/.DS_Store
+
+# Data
+luthia-data/
 luthia-app/static/product-images/
-ideas/
-luthia-data/product-images/
-luthia-data/raw-data/
+
+# IDE
 Luthia-App.code-workspace
