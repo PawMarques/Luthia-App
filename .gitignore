@@ -4,8 +4,9 @@
 # Environment
 .env
 
-# Data
+# Folders
 luthia-data/
+ideas
 
 # Files
 generate_file_list.py
