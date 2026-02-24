@@ -60,6 +60,27 @@ ALLOWED_EXTENSIONS: frozenset[str] = frozenset({'jpg', 'jpeg', 'png', 'webp', 'g
 # Functions
 # ---------------------------------------------------------------------------
 
+def paginate(query, page: int, per_page: int) -> dict:
+    """Paginate a SQLAlchemy query and return a uniform result dict.
+
+    Returns:
+        items    — the ORM objects for the current page
+        total    — total number of matching rows
+        page     — the requested page number
+        pages    — total number of pages (always ≥ 1)
+        per_page — the page size used
+    """
+    total = query.count()
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+    return {
+        'items':    items,
+        'total':    total,
+        'page':     page,
+        'pages':    max(1, (total + per_page - 1) // per_page),
+        'per_page': per_page,
+    }
+
+
 def api_error(message, status=400):
     """Return a JSON error response with a normalised {ok, errors} shape."""
     msgs = message if isinstance(message, list) else [message]

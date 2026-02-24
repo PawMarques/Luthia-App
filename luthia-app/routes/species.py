@@ -9,7 +9,7 @@ Provides:
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import func, or_
 
-from helpers import VENDOR_FLAGS
+from helpers import VENDOR_FLAGS, paginate
 from models import Category, Product, Species, SpeciesAlias, Vendor, db
 
 species_bp = Blueprint('species', __name__)
@@ -59,7 +59,6 @@ def api_species_list():
     cites_only = request.args.get('cites')     == '1'
     avail_only = request.args.get('available') == '1'
     page       = request.args.get('page', 1, type=int)
-    per_page   = 48  # cards per page — divisible by 2, 3, 4
 
     # Base query
     query = Species.query
@@ -108,18 +107,17 @@ def api_species_list():
         Species.scientific_name.asc(),
     )
 
-    total    = query.count()
-    species  = query.offset((page - 1) * per_page).limit(per_page).all()
+    result = paginate(query, page, per_page=48)
 
     # Preload product availability stats in one query
-    stats = _product_stats_for_species([s.species_id for s in species])
+    stats = _product_stats_for_species([s.species_id for s in result['items']])
 
     return jsonify({
-        'total':   total,
-        'page':    page,
-        'pages':   max(1, (total + per_page - 1) // per_page),
-        'per_page': per_page,
-        'rows':    [_species_card(s, stats.get(s.species_id, {})) for s in species],
+        'total':    result['total'],
+        'page':     result['page'],
+        'pages':    result['pages'],
+        'per_page': result['per_page'],
+        'rows':     [_species_card(s, stats.get(s.species_id, {})) for s in result['items']],
     })
 
 

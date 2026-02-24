@@ -17,6 +17,7 @@ from helpers import (
     VENDOR_FLAGS,
     fmt_dims,
     fmt_image,
+    paginate,
     staleness_info,
 )
 from models import Category, Format, Grade, Product, Species, Vendor, db
@@ -97,17 +98,16 @@ def api_products():
     query = _build_product_query(species_id, vendor_id, category_id, format_id, max_price)
     query = _apply_sort(query, sort_by, sort_order)
 
-    total    = query.count()
-    products = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+    result = paginate(query, page, PER_PAGE)
 
     # Dynamic format options — only relevant when a category filter is active.
     formats = _formats_for_category(category_id) if category_id else []
 
     return jsonify({
-        'total':   total,
-        'page':    page,
-        'pages':   max(1, (total + PER_PAGE - 1) // PER_PAGE),
-        'rows':    [_product_row(p) for p in products],
+        'total':   result['total'],
+        'page':    result['page'],
+        'pages':   result['pages'],
+        'rows':    [_product_row(p) for p in result['items']],
         'formats': formats,
     })
 
