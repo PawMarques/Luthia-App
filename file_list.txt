@@ -6,13 +6,6 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/generate_file_list.
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.claude/settings.local.json
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.vscode/launch.json
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.vscode/settings.json
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/fret_placement_tables.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-species.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-suppliers-20260214.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-suppliers-20260215.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-suppliers-20260216.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-suppliers-20260217.xlsx
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/data-sources/tonewood-suppliers-20260218.xlsx
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/JINJA2_MACROS.md
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/REFACTORING.md
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/TESTS.md
@@ -28,7 +21,6 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/config.p
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/fret_calc_excel.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/helpers.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/import_data.py
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/luthia.db
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/migrate_images.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/models.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/pytest.ini
@@ -49,9 +41,6 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/l
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/luthia-light.css
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/luthia-logo.svg
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/sidebar.js
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/product-images/1421_392102d41a21476aa91346b4b0d65cc3.jpg
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/product-images/1421_99924ab6577e49e296d06575277e3655.jpg
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/static/product-images/1421_c7560e237dfe48a2bb6533753b53a31a.jpg
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/base.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/fret.html
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/templates/index.html
@@ -74,3 +63,14 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/te
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_images.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_species.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/tests/test_vendors.py
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/fret_placement_tables.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/luthia.db
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-species.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-suppliers-20260214.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-suppliers-20260215.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-suppliers-20260216.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-suppliers-20260217.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/tonewood-suppliers-20260218.xlsx
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/product-images/1421_071f80fd67e548e88192fee8c1690ac8.jpg
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/product-images/1421_4c8b18c03ced47ca8cc75b7007b567fe.jpg
+https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-data/product-images/1421_d19e36815b944e27a1ab9fff5190b7ec.jpg
