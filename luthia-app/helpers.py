@@ -6,6 +6,8 @@ No Flask or SQLAlchemy imports here, so this module can be tested in isolation.
 
 from datetime import datetime, timezone
 
+from flask import jsonify
+
 
 # ---------------------------------------------------------------------------
 # Display constants
@@ -57,6 +59,12 @@ ALLOWED_EXTENSIONS: frozenset[str] = frozenset({'jpg', 'jpeg', 'png', 'webp', 'g
 # ---------------------------------------------------------------------------
 # Functions
 # ---------------------------------------------------------------------------
+
+def api_error(message, status=400):
+    """Return a JSON error response with a normalised {ok, errors} shape."""
+    msgs = message if isinstance(message, list) else [message]
+    return jsonify({'ok': False, 'errors': msgs}), status
+
 
 def allowed_file(filename: str) -> bool:
     """Return True if *filename* has an accepted image extension."""

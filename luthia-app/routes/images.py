@@ -11,7 +11,7 @@ import uuid
 
 from flask import Blueprint, current_app, jsonify, request
 
-from helpers import allowed_file, fmt_image
+from helpers import allowed_file, api_error, fmt_image
 from models import Product, ProductImage, db
 
 images_bp = Blueprint('images', __name__)
@@ -65,7 +65,7 @@ def _save_url_image(product_id: int, data: dict):
     """Persist an external URL image record and return the new image JSON."""
     url = (data.get('url') or '').strip()
     if not url:
-        return jsonify({'ok': False, 'error': 'No URL provided.'}), 400
+        return api_error('No URL provided.')
 
     caption   = (data.get('caption') or '').strip()
     img = ProductImage(
@@ -83,13 +83,13 @@ def _save_url_image(product_id: int, data: dict):
 def _save_file_image(product_id: int):
     """Validate and persist an uploaded file image record."""
     if 'file' not in request.files:
-        return jsonify({'ok': False, 'error': 'No file provided.'}), 400
+        return api_error('No file provided.')
 
     f = request.files['file']
     if not f.filename:
-        return jsonify({'ok': False, 'error': 'Empty filename.'}), 400
+        return api_error('Empty filename.')
     if not allowed_file(f.filename):
-        return jsonify({'ok': False, 'error': 'File type not allowed. Use JPG, PNG, WebP or GIF.'}), 400
+        return api_error('File type not allowed. Use JPG, PNG, WebP or GIF.')
 
     ext      = f.filename.rsplit('.', 1)[1].lower()
     # Prefix the UUID filename with the product_id for easier manual identification.
