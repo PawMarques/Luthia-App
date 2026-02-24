@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Planner · Tonewood Finder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0e0e10;
+  --surface:   #18181b;
+  --surface2:  #1c1c1e;
+  --border:    #27272a;
+  --border2:   #3f3f46;
+  --muted:     #3f3f46;
+  --subtle:    #52525b;
+  --dim:       #71717a;
+  --mid:       #a1a1aa;
+  --text:      #f4f4f5;
+  --green:     #34d399;
+  --amber:     #f59e0b;
+  --red:       #f87171;
+  --blue:      #60a5fa;
+  --purple:    #c084fc;
+  --pink:      #f9a8d4;
+  --accent:    #34d399;
+}
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── MONO utility ── */
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; max-width: 1200px; margin: 0 auto;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-icon { font-size: 22px; }
+.header-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.header-sub   { font-size: 12px; color: var(--subtle); margin-top: 1px; }
+.header-sub a { color: var(--subtle); text-decoration: none; }
+.header-sub a:hover { color: var(--mid); }
+
+/* ── MAIN ── */
+.main {
+  max-width: 1200px; margin: 0 auto;
+  padding: 24px 28px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  border-radius: 6px; padding: 7px 16px;
+  cursor: pointer; text-decoration: none; border: 1px solid;
+  transition: all 0.15s;
+}
+.btn-primary {
+  color: var(--text); background: var(--surface2);
+  border-color: var(--border2);
+}
+.btn-primary:hover { background: var(--muted); border-color: var(--dim); }
+.btn-ghost {
+  color: var(--dim); background: transparent;
+  border-color: var(--border);
+}
+.btn-ghost:hover { color: var(--mid); border-color: var(--border2); }
+.btn-danger {
+  color: var(--red); background: transparent;
+  border-color: var(--border);
+}
+.btn-danger:hover { background: #1a0a0a; border-color: var(--red); }
+.btn-accent {
+  color: #0e0e10; background: var(--accent);
+  border-color: var(--accent); font-weight: 600;
+}
+.btn-accent:hover { background: #2dd4bf; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  display: flex; gap: 2px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  max-width: 1200px; margin: 0 auto;
+}
+.nav-tab {
+  font-size: 13px; font-weight: 500; padding: 10px 16px;
+  color: var(--dim); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-tab:hover { color: var(--mid); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ── PAGE VIEWS ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ══════════════════════════════════════════════
+   BUILDS INDEX
+══════════════════════════════════════════════ */
+.builds-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.builds-header h2 { font-size: 16px; font-weight: 600; color: var(--text); }
+
+.builds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 14px;
+}
+
+.build-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px; cursor: pointer;
+  transition: border-color 0.15s, background 0.1s;
+  text-decoration: none; display: block;
+}
+.build-card:hover { border-color: var(--border2); background: var(--surface2); }
+.build-card-title {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 3px;
+}
+.build-card-sub { font-size: 12px; color: var(--subtle); margin-bottom: 12px; }
+.build-progress-bar {
+  height: 3px; background: var(--muted); border-radius: 2px; margin-bottom: 12px;
+}
+.build-progress-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+}
+.build-card-meta {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.empty-state {
+  text-align: center; padding: 60px 20px; color: var(--subtle);
+}
+.empty-state p { margin-top: 8px; font-size: 13px; }
+
+/* ══════════════════════════════════════════════
+   NEW BUILD FORM
+══════════════════════════════════════════════ */
+.form-wrap { max-width: 520px; }
+
+.form-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 28px;
+}
+.form-card h2 { font-size: 15px; font-weight: 600; margin-bottom: 22px; color: var(--text); }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-label {
+  font-size: 11px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.form-input, .form-select {
+  height: 38px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 13px;
+  padding: 0 12px; font-family: inherit; outline: none;
+  transition: border-color 0.15s; width: 100%;
+  appearance: none; -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--border2); }
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  padding-right: 30px; cursor: pointer;
+}
+.form-select option { background: var(--surface2); }
+
+.variant-info {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px 14px;
+  font-size: 12px; color: var(--dim); line-height: 1.9;
+  margin-top: -8px; display: none;
+}
+.variant-info strong { color: var(--mid); }
+
+/* ══════════════════════════════════════════════
+   BUILD DETAIL
+══════════════════════════════════════════════ */
+.build-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 20px;
+  align-items: start;
+}
+
+.section-label {
+  font-size: 11px; font-weight: 600; color: var(--subtle);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+
+/* Parts */
+.parts-list {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.part-row {
+  display: grid;
+  grid-template-columns: 100px 1fr auto auto;
+  gap: 14px; align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1a1a1d;
+  transition: background 0.1s;
+}
+.part-row:last-child { border-bottom: none; }
+.part-row:hover { background: var(--surface2); }
+.part-empty .part-detail { color: var(--subtle); }
+
+.part-role {
+  font-size: 12px; font-weight: 600; color: var(--mid);
+  display: flex; align-items: center; gap: 6px;
+}
+.part-role-icon { font-size: 16px; }
+.part-species { font-size: 13px; font-weight: 500; color: var(--text); }
+.part-meta    { font-size: 11px; color: var(--subtle); margin-top: 2px; }
+.part-price   {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; text-align: right;
+}
+.part-price-cur { font-size: 10px; color: var(--subtle); margin-left: 2px; }
+.part-actions { display: flex; gap: 6px; align-items: center; }
+
+.part-warning {
+  font-size: 11px; color: var(--amber); margin-top: 5px;
+  background: #1a120000; border: 1px solid #78350f44;
+  border-radius: 4px; padding: 3px 8px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.part-notice {
+  font-size: 11px; color: var(--blue); margin-top: 5px;
+  background: #0c1a2e44; border: 1px solid #1e3a5f44;
+  border-radius: 4px; padding: 3px 8px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+/* Total */
+.total-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; margin-top: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.total-label { font-size: 13px; color: var(--dim); font-weight: 500; }
+.total-price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px; font-weight: 600; color: var(--text);
+}
+.total-cur { font-size: 12px; color: var(--subtle); margin-left: 4px; }
+
+/* Ref panel */
+.ref-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.ref-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 14px; border-bottom: 1px solid #1a1a1d;
+  font-size: 12px; color: var(--dim);
+}
+.ref-row:last-child { border-bottom: none; }
+.ref-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--mid);
+}
+.ref-section {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  background: #111113; padding: 5px 14px;
+  justify-content: flex-start;
+}
+.case-warn-note {
+  font-size: 11px; color: var(--amber);
+  background: #1a120000; border: 1px solid #78350f55;
+  border-radius: 6px; padding: 8px 12px; margin-top: 8px;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+
+/* ══════════════════════════════════════════════
+   PICKER MODAL
+══════════════════════════════════════════════ */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200; overflow-y: auto;
+  backdrop-filter: blur(2px);
+}
+.overlay.open { display: block; }
+
+.picker-modal {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; width: 90%; max-width: 620px;
+  margin: 60px auto; max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.picker-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface);
+  border-radius: 12px 12px 0 0;
+}
+.picker-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.picker-role-badge {
+  font-size: 11px; color: var(--accent); background: #0d2b1e;
+  border: 1px solid #064e3b; border-radius: 20px; padding: 2px 10px;
+  margin-left: 8px;
+}
+.picker-close {
+  background: none; border: none; color: var(--dim);
+  font-size: 18px; cursor: pointer; line-height: 1;
+  padding: 2px 6px; border-radius: 4px;
+}
+.picker-close:hover { color: var(--text); background: var(--surface2); }
+.picker-body { overflow-y: auto; }
+.picker-list { padding: 6px 0; }
+
+.picker-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px; border-bottom: 1px solid #1a1a1d;
+  cursor: pointer; transition: background 0.1s;
+  gap: 12px;
+}
+.picker-row:last-child { border-bottom: none; }
+.picker-row:hover { background: var(--surface2); }
+
+.picker-species { font-size: 13px; font-weight: 500; color: var(--text); }
+.picker-meta    { font-size: 11px; color: var(--subtle); margin-top: 3px; }
+.picker-dims    { color: var(--dim); }
+.picker-price   {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; text-align: right; flex-shrink: 0;
+}
+.picker-price-cur { font-size: 10px; color: var(--subtle); }
+
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: 10px; border-radius: 10px; padding: 1px 7px;
+  margin-left: 6px; vertical-align: middle;
+}
+.badge-grade    { color: var(--mid); background: #27272a; border: 1px solid var(--muted); }
+.badge-unverified { color: var(--blue); background: #0c1a2e; border: 1px solid #1e3a5f; }
+.badge-verified   { color: var(--green); background: #052e16; border: 1px solid #064e3b; }
+
+.picker-empty {
+  padding: 40px 20px; text-align: center; color: var(--subtle); font-size: 13px;
+}
+
+/* ══════════════════════════════════════════════
+   CATEGORY BADGES
+══════════════════════════════════════════════ */
+.cat-badge {
+  display: inline-flex; align-items: center;
+  font-size: 10px; font-weight: 500; border-radius: 20px;
+  padding: 2px 8px; white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <span class="header-icon">🔨</span>
+      <div>
+        <div class="header-title">Build Planner</div>
+        <div class="header-sub"><a href="#">← Tonewood Finder</a></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="showPage('index')">All Builds</button>
+      <button class="btn btn-accent btn-sm" onclick="showPage('new')">+ New Build</button>
+    </div>
+  </div>
+  <!-- Nav tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-index" onclick="showPage('index')">Builds</button>
+    <button class="nav-tab" id="tab-new" onclick="showPage('new')">New Build</button>
+    <button class="nav-tab" id="tab-detail" id="tab-detail" style="display:none;">Build Detail</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: BUILDS INDEX
+══════════════════════════════════════ -->
+<div class="main page active" id="page-index">
+  <div class="builds-header">
+    <h2>Your Builds</h2>
+    <button class="btn btn-accent" onclick="showPage('new')">+ New Build</button>
+  </div>
+  <div class="builds-grid" id="builds-grid">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: NEW BUILD
+══════════════════════════════════════ -->
+<div class="main page" id="page-new">
+  <div class="form-wrap">
+    <div class="form-card">
+      <h2>New Build</h2>
+      <div class="form-group">
+        <label class="form-label">Build Name</label>
+        <input type="text" id="build-name" class="form-input"
+               placeholder="e.g. My Ash Jazz Bass">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Instrument Template</label>
+        <select id="tpl-select" class="form-select" onchange="onTplChange()">
+          <option value="">Select instrument…</option>
+          <option value="jazz">Jazz Bass</option>
+          <option value="precision">Precision Bass</option>
+          <option value="stingray">Music Man Stingray</option>
+          <option value="spector">Spector NS</option>
+        </select>
+      </div>
+      <div class="form-group" id="variant-group" style="display:none;">
+        <label class="form-label">Variant</label>
+        <select id="var-select" class="form-select" onchange="onVarChange()">
+          <option value="">Select variant…</option>
+        </select>
+      </div>
+      <div class="variant-info" id="variant-info"></div>
+      <div style="height:8px;"></div>
+      <button class="btn btn-accent" style="width:100%;justify-content:center;margin-top:8px;"
+              onclick="createBuild()">Create Build →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: BUILD DETAIL
+══════════════════════════════════════ -->
+<div class="main page" id="page-detail">
+  <div class="build-detail-grid">
+    <!-- Left: parts -->
+    <div>
+      <div class="section-label">Parts</div>
+      <div class="parts-list" id="parts-list"></div>
+      <div class="total-bar">
+        <span class="total-label">Build Total</span>
+        <span><span class="total-price mono" id="total-price">—</span><span class="total-cur">SEK</span></span>
+      </div>
+    </div>
+    <!-- Right: ref dims -->
+    <div>
+      <div class="section-label">Reference Dimensions</div>
+      <div class="ref-panel" id="ref-panel"></div>
+      <div id="case-warn"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PICKER MODAL -->
+<div class="overlay" id="overlay">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <div>
+        <span class="picker-title">Select product</span>
+        <span class="picker-role-badge" id="picker-role-badge"></span>
+      </div>
+      <button class="picker-close" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-body" id="picker-body"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// MOCK DATA
+// ══════════════════════════════════════════════
+
+const TEMPLATES = {
+  jazz: {
+    name: 'Jazz Bass',
+    variants: {
+      'jazz-4-34': {
+        label: '4-string 34"',
+        strings: 4, scale_mm: 863.6,
+        body_length_mm: 525, body_width_mm: 350, body_thickness_mm: 45,
+        neck_length_mm: 622, neck_length_thru_mm: null,
+        neck_thickness_1f_mm: 23, neck_thickness_12f_mm: 25,
+        nut_width_mm: 38.1, neck_width_heel_mm: 62,
+        headstock_length_mm: 185, headstock_width_mm: 75,
+        overall_length_mm: 1185,
+        construction: 'bolt-on', has_top: false,
+      },
+    }
+  },
+  precision: {
+    name: 'Precision Bass',
+    variants: {
+      'pbass-4-34': {
+        label: '4-string 34"',
+        strings: 4, scale_mm: 863.6,
+        body_length_mm: 510, body_width_mm: 335, body_thickness_mm: 44,
+        neck_length_mm: 622, neck_length_thru_mm: null,
+        neck_thickness_1f_mm: 24, neck_thickness_12f_mm: 26,
+        nut_width_mm: 41.3, neck_width_heel_mm: 63,
+        headstock_length_mm: 180, headstock_width_mm: 75,
+        overall_length_mm: 1168,
+        construction: 'bolt-on', has_top: false,
+      },
+    }
+  },
+  stingray: {
+    name: 'Music Man Stingray',
+    variants: {
+      'sr-4-34': {
+        label: '4-string 34"',
+        strings: 4, scale_mm: 863.6,
+        body_length_mm: 445, body_width_mm: 340, body_thickness_mm: 44,
+        neck_length_mm: 622, neck_length_thru_mm: null,
+        neck_thickness_1f_mm: 24, neck_thickness_12f_mm: 26,
+        nut_width_mm: 41.3, neck_width_heel_mm: 65,
+        headstock_length_mm: 175, headstock_width_mm: 90,
+        overall_length_mm: 1150,
+        construction: 'bolt-on', has_top: false,
+      },
+    }
+  },
+  spector: {
+    name: 'Spector NS',
+    variants: {
+      'spector-4-34': {
+        label: '4-string 34"',
+        strings: 4, scale_mm: 863.6,
+        body_length_mm: 460, body_width_mm: 355, body_thickness_mm: 50,
+        neck_length_mm: null, neck_length_thru_mm: 950,
+        neck_thickness_1f_mm: 21, neck_thickness_12f_mm: 24,
+        nut_width_mm: 41.7, neck_width_heel_mm: 65,
+        headstock_length_mm: 175, headstock_width_mm: 75,
+        overall_length_mm: 1145,
+        construction: 'neck-through', has_top: true,
+      },
+    }
+  }
+};
+
+// Mock product database
+const PRODUCTS = {
+  body: [
+    { id: 1,  species: 'Swamp Ash',       vendor: 'Sunda Byggvaror',       flag: '🇸🇪', grade: 'AA',  price: 890,  thickness_mm: 45, width_mm: 370, length_mm: 540, url: '#' },
+    { id: 2,  species: 'Alder',           vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'A',   price: 620,  thickness_mm: 44, width_mm: 360, length_mm: 530, url: '#' },
+    { id: 3,  species: 'Hard Maple',      vendor: 'Rivolta',                flag: '🇮🇹', grade: 'AAA', price: 1240, thickness_mm: 46, width_mm: 380, length_mm: 550, url: '#' },
+    { id: 4,  species: 'Mahogany',        vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'AA',  price: 980,  thickness_mm: null, width_mm: null, length_mm: null, url: '#' },
+    { id: 5,  species: 'Korina (Limba)',  vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'A',   price: 1450, thickness_mm: 45, width_mm: 355, length_mm: 525, url: '#' },
+    { id: 6,  species: 'Paulownia',       vendor: 'Sunda Byggvaror',        flag: '🇸🇪', grade: null,  price: 380,  thickness_mm: 43, width_mm: 360, length_mm: 540, url: '#' },
+    { id: 7,  species: 'Walnut',          vendor: 'Rivolta',                flag: '🇮🇹', grade: 'AA',  price: 1120, thickness_mm: 45, width_mm: 375, length_mm: 530, url: '#' },
+    { id: 8,  species: 'Basswood',        vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'A',   price: 540,  thickness_mm: null, width_mm: null, length_mm: null, url: '#' },
+  ],
+  neck: [
+    { id: 20, species: 'Hard Maple',      vendor: 'Sunda Byggvaror',       flag: '🇸🇪', grade: 'AA',  price: 650,  thickness_mm: 28, width_mm: 70, length_mm: 640, url: '#' },
+    { id: 21, species: 'Soft Maple',      vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'A',   price: 490,  thickness_mm: 27, width_mm: 68, length_mm: 630, url: '#' },
+    { id: 22, species: 'Mahogany',        vendor: 'Rivolta',                flag: '🇮🇹', grade: 'AA',  price: 720,  thickness_mm: null, width_mm: null, length_mm: null, url: '#' },
+    { id: 23, species: 'Walnut',          vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'A',   price: 810,  thickness_mm: 28, width_mm: 72, length_mm: 635, url: '#' },
+    { id: 24, species: 'Hard Maple',      vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'AAA', price: 890,  thickness_mm: 30, width_mm: 75, length_mm: 650, url: '#' },
+  ],
+  fretboard: [
+    { id: 40, species: 'Ebony',           vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'AAA', price: 420,  thickness_mm: 8, width_mm: 80, length_mm: 510, url: '#' },
+    { id: 41, species: 'Indian Rosewood', vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'AA',  price: 280,  thickness_mm: 7, width_mm: 78, length_mm: 500, url: '#' },
+    { id: 42, species: 'Maple',           vendor: 'Sunda Byggvaror',        flag: '🇸🇪', grade: 'A',   price: 210,  thickness_mm: null, width_mm: null, length_mm: null, url: '#' },
+    { id: 43, species: 'Pau Ferro',       vendor: 'Rivolta',                flag: '🇮🇹', grade: 'AA',  price: 340,  thickness_mm: 7, width_mm: 80, length_mm: 508, url: '#' },
+    { id: 44, species: 'Wenge',           vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'AA',  price: 390,  thickness_mm: 8, width_mm: 82, length_mm: 510, url: '#' },
+    { id: 45, species: 'Ziricote',        vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'AAA', price: 680,  thickness_mm: 8, width_mm: 80, length_mm: 505, url: '#' },
+  ],
+  top: [
+    { id: 60, species: 'Flamed Maple',    vendor: 'Guitars & Woods',        flag: '🇵🇹', grade: 'AAA', price: 890,  thickness_mm: 8, width_mm: 360, length_mm: 530, url: '#' },
+    { id: 61, species: 'Quilted Maple',   vendor: 'Rivolta',                flag: '🇮🇹', grade: 'AA',  price: 720,  thickness_mm: 7, width_mm: 355, length_mm: 525, url: '#' },
+    { id: 62, species: 'Spalted Maple',   vendor: 'Forest Guitar Supplies', flag: '🇪🇸', grade: 'AA',  price: 650,  thickness_mm: null, width_mm: null, length_mm: null, url: '#' },
+    { id: 63, species: 'Figured Walnut',  vendor: 'Sunda Byggvaror',        flag: '🇸🇪', grade: 'AAA', price: 980,  thickness_mm: 9, width_mm: 360, length_mm: 535, url: '#' },
+  ]
+};
+
+const ROLE_LABELS = { body: 'Body Blank', neck: 'Neck Blank', fretboard: 'Fretboard', top: 'Top Blank' };
+const ROLE_ICONS  = { body: '🪵', neck: '🎸', fretboard: '📏', top: '✨' };
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let builds = [
+  {
+    id: 1, name: 'Ash Jazz Project',
+    templateKey: 'jazz', variantKey: 'jazz-4-34',
+    parts: {
+      body:      { product_id: 1 },
+      neck:      { product_id: 20 },
+      fretboard: { product_id: 40 },
+    },
+    created: '2026-01-15',
+  }
+];
+let nextBuildId = 2;
+let currentBuildId = null;
+let pickerRole = null;
+
+// ══════════════════════════════════════════════
+// PAGE ROUTING
+// ══════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+  document.getElementById('page-' + name).classList.add('active');
+  const tab = document.getElementById('tab-' + name);
+  if (tab) tab.classList.add('active');
+
+  if (name === 'index') renderBuildsIndex();
+  if (name === 'detail') renderBuildDetail();
+}
+
+// ══════════════════════════════════════════════
+// BUILDS INDEX
+// ══════════════════════════════════════════════
+function renderBuildsIndex() {
+  const grid = document.getElementById('builds-grid');
+  if (!builds.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <div style="font-size:32px;">🎸</div>
+      <p>No builds yet. Create your first one!</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = builds.map(b => {
+    const tpl = TEMPLATES[b.templateKey];
+    const v   = tpl.variants[b.variantKey];
+    const roles = rolesForVariant(v);
+    const done  = roles.filter(r => b.parts[r]?.product_id).length;
+    const pct   = Math.round(done / roles.length * 100);
+    const total = computeTotal(b);
+    const totalStr = total ? total.toLocaleString('sv-SE') + ' SEK' : '—';
+
+    return `<div class="build-card" onclick="openBuild(${b.id})">
+      <div class="build-card-title">${b.name}</div>
+      <div class="build-card-sub">${tpl.name} · ${v.label}</div>
+      <div class="build-progress-bar"><div class="build-progress-fill" style="width:${pct}%"></div></div>
+      <div class="build-card-meta">
+        <span>${done}/${roles.length} parts</span>
+        <span>${totalStr}</span>
+        <span style="color:var(--muted);">${b.created}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openBuild(id) {
+  currentBuildId = id;
+  document.getElementById('tab-detail').style.display = 'block';
+  showPage('detail');
+}
+
+// ══════════════════════════════════════════════
+// NEW BUILD FORM
+// ══════════════════════════════════════════════
+function onTplChange() {
+  const key = document.getElementById('tpl-select').value;
+  const varGroup = document.getElementById('variant-group');
+  const varSelect = document.getElementById('var-select');
+  const info = document.getElementById('variant-info');
+
+  if (!key) { varGroup.style.display = 'none'; info.style.display = 'none'; return; }
+
+  const tpl = TEMPLATES[key];
+  varSelect.innerHTML = '<option value="">Select variant…</option>';
+  Object.entries(tpl.variants).forEach(([vk, v]) => {
+    varSelect.innerHTML += `<option value="${vk}">${v.label}</option>`;
+  });
+  varGroup.style.display = 'flex';
+  info.style.display = 'none';
+
+  // Auto-select if only one variant
+  if (Object.keys(tpl.variants).length === 1) {
+    varSelect.selectedIndex = 1;
+    onVarChange();
+  }
+}
+
+function onVarChange() {
+  const tplKey = document.getElementById('tpl-select').value;
+  const varKey = document.getElementById('var-select').value;
+  const info = document.getElementById('variant-info');
+  if (!varKey) { info.style.display = 'none'; return; }
+
+  const v = TEMPLATES[tplKey].variants[varKey];
+  const parts = rolesForVariant(v).map(r => ROLE_LABELS[r]);
+  info.innerHTML = `<strong>Parts needed:</strong> ${parts.join(', ')}<br>
+    <strong>Construction:</strong> ${v.construction}${v.has_top ? ' · includes top blank' : ''}`;
+  info.style.display = 'block';
+}
+
+function createBuild() {
+  const name   = document.getElementById('build-name').value.trim();
+  const tplKey = document.getElementById('tpl-select').value;
+  const varKey = document.getElementById('var-select').value;
+
+  if (!name || !tplKey || !varKey) {
+    alert('Please fill in all fields.'); return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const build = { id: nextBuildId++, name, templateKey: tplKey, variantKey: varKey, parts: {}, created: today };
+  builds.push(build);
+
+  // Reset form
+  document.getElementById('build-name').value = '';
+  document.getElementById('tpl-select').value = '';
+  document.getElementById('variant-group').style.display = 'none';
+  document.getElementById('variant-info').style.display = 'none';
+
+  openBuild(build.id);
+}
+
+// ══════════════════════════════════════════════
+// BUILD DETAIL
+// ══════════════════════════════════════════════
+function rolesForVariant(v) {
+  const r = ['body', 'neck', 'fretboard'];
+  if (v.has_top) r.push('top');
+  return r;
+}
+
+function computeTotal(build) {
+  let t = 0;
+  Object.values(build.parts).forEach(slot => {
+    if (!slot.product_id) return;
+    const role = Object.keys(build.parts).find(r => build.parts[r] === slot);
+    const p = getProduct(role, slot.product_id);
+    if (p) t += p.price;
+  });
+  return t || null;
+}
+
+function getProduct(role, id) {
+  return PRODUCTS[role]?.find(p => p.id === id);
+}
+
+function hasDims(p) {
+  return p && (p.thickness_mm || p.width_mm || p.length_mm);
+}
+
+function dimsStr(p) {
+  const parts = [];
+  if (p.thickness_mm) parts.push(`${p.thickness_mm}mm thick`);
+  if (p.width_mm)     parts.push(`${p.width_mm}mm wide`);
+  if (p.length_mm)    parts.push(`${p.length_mm}mm long`);
+  return parts.join(' · ');
+}
+
+function checkThicknessWarn(build) {
+  const bodySlot = build.parts['body'];
+  const topSlot  = build.parts['top'];
+  if (!bodySlot?.product_id || !topSlot?.product_id) return false;
+  const bp = getProduct('body', bodySlot.product_id);
+  const tp = getProduct('top',  topSlot.product_id);
+  if (!bp || !tp || !bp.thickness_mm || !tp.thickness_mm) return false;
+  return (bp.thickness_mm + tp.thickness_mm) > 45;
+}
+
+function renderBuildDetail() {
+  const build = builds.find(b => b.id === currentBuildId);
+  if (!build) return;
+
+  const tpl = TEMPLATES[build.templateKey];
+  const v   = tpl.variants[build.variantKey];
+  const roles = rolesForVariant(v);
+  const thickWarn = checkThicknessWarn(build);
+
+  // Update tab label
+  document.getElementById('tab-detail').textContent = build.name;
+
+  // Render parts
+  let partsHtml = '';
+  let total = 0;
+
+  roles.forEach(role => {
+    const slot = build.parts[role] || {};
+    const p    = slot.product_id ? getProduct(role, slot.product_id) : null;
+    const icon = ROLE_ICONS[role];
+    const label = role.charAt(0).toUpperCase() + role.slice(1);
+
+    if (p) {
+      total += p.price;
+      const verified = hasDims(p);
+      const dims = verified ? dimsStr(p) : 'dimensions not specified';
+      const warnHtml = (role === 'body' || role === 'top') && thickWarn
+        ? `<div class="part-warning">⚠ Combined body + top thickness exceeds 45mm — body may need planing</div>` : '';
+      const noticeHtml = !verified
+        ? `<div class="part-notice">ℹ Vendor dimensions not specified — verify before ordering</div>` : '';
+
+      partsHtml += `
+<div class="part-row">
+  <div class="part-role"><span class="part-role-icon">${icon}</span>${label}</div>
+  <div class="part-detail">
+    <div class="part-species">${p.species}
+      ${p.grade ? `<span class="badge badge-grade">${p.grade}</span>` : ''}
+      ${verified ? `<span class="badge badge-verified">dims ✓</span>` : `<span class="badge badge-unverified">dims unverified</span>`}
+    </div>
+    <div class="part-meta">${p.vendor} ${p.flag} · ${dims}</div>
+    ${warnHtml}${noticeHtml}
+  </div>
+  <div class="part-price">${p.price.toLocaleString('sv-SE')}<span class="part-price-cur">SEK</span></div>
+  <div class="part-actions">
+    ${p.url ? `<a href="${p.url}" class="btn btn-ghost btn-sm">View ↗</a>` : ''}
+    <button class="btn btn-ghost btn-sm" onclick="openPicker('${role}')">Change</button>
+  </div>
+</div>`;
+    } else {
+      partsHtml += `
+<div class="part-row part-empty">
+  <div class="part-role"><span class="part-role-icon">${icon}</span>${label}</div>
+  <div class="part-detail">No product selected</div>
+  <div class="part-price">—</div>
+  <div class="part-actions">
+    <button class="btn btn-accent btn-sm" onclick="openPicker('${role}')">Select</button>
+  </div>
+</div>`;
+    }
+  });
+
+  document.getElementById('parts-list').innerHTML = partsHtml;
+  document.getElementById('total-price').textContent =
+    total ? total.toLocaleString('sv-SE') : '—';
+
+  // Reference dimensions
+  const isThru = v.construction === 'neck-through';
+  const neckLen = isThru ? v.neck_length_thru_mm : v.neck_length_mm;
+  const neckLenLabel = isThru ? 'Neck-thru blank' : 'Neck blank (nut→heel)';
+  const caseWarnL = v.overall_length_mm > 1250;
+  const caseWarnW = v.body_width_mm > 380;
+
+  document.getElementById('ref-panel').innerHTML = `
+<div class="ref-row"><span>Construction</span><span class="ref-val">${v.construction}</span></div>
+<div class="ref-row ref-section">Body Blank</div>
+<div class="ref-row"><span>Length</span><span class="ref-val">${v.body_length_mm} mm</span></div>
+<div class="ref-row"><span>Width</span><span class="ref-val">${v.body_width_mm} mm</span></div>
+<div class="ref-row"><span>Thickness</span><span class="ref-val">${v.body_thickness_mm} mm</span></div>
+<div class="ref-row ref-section">Neck Blank</div>
+<div class="ref-row"><span>${neckLenLabel}</span><span class="ref-val">${neckLen} mm</span></div>
+<div class="ref-row"><span>Nut width</span><span class="ref-val">${v.nut_width_mm} mm</span></div>
+<div class="ref-row"><span>Width at heel</span><span class="ref-val">${v.neck_width_heel_mm} mm</span></div>
+<div class="ref-row"><span>Thickness 1st fret</span><span class="ref-val">${v.neck_thickness_1f_mm} mm</span></div>
+<div class="ref-row"><span>Thickness 12th fret</span><span class="ref-val">${v.neck_thickness_12f_mm} mm</span></div>
+<div class="ref-row ref-section">Overall</div>
+<div class="ref-row"><span>Overall length</span><span class="ref-val">${v.overall_length_mm} mm ${caseWarnL ? '⚠' : ''}</span></div>
+<div class="ref-row"><span>Scale</span><span class="ref-val">${v.scale_mm} mm (${v.strings}-str)</span></div>
+`;
+
+  const caseWarn = document.getElementById('case-warn');
+  caseWarn.innerHTML = (caseWarnL || caseWarnW)
+    ? `<div class="case-warn-note">⚠ One or more dimensions may exceed standard transport case limits (L 1250mm · W 380mm)</div>`
+    : '';
+}
+
+// ══════════════════════════════════════════════
+// PRODUCT PICKER
+// ══════════════════════════════════════════════
+function openPicker(role) {
+  pickerRole = role;
+  const label = ROLE_LABELS[role];
+  document.getElementById('picker-role-badge').textContent = label;
+
+  const build   = builds.find(b => b.id === currentBuildId);
+  const variant = TEMPLATES[build.templateKey].variants[build.variantKey];
+  const candidates = getCandidates(role, variant);
+
+  let html = '';
+  if (!candidates.length) {
+    html = `<div class="picker-empty">No matching products found in the database.</div>`;
+  } else {
+    html = '<div class="picker-list">';
+    candidates.forEach(c => {
+      const p = c.product;
+      const dims = hasDims(p) ? dimsStr(p) : '';
+      const gradeHtml  = p.grade ? `<span class="badge badge-grade">${p.grade}</span>` : '';
+      const verifiedHtml = hasDims(p)
+        ? `<span class="badge badge-verified">dims ✓</span>`
+        : `<span class="badge badge-unverified">dims unverified</span>`;
+
+      html += `
+<div class="picker-row" onclick="selectProduct('${role}', ${p.id})">
+  <div style="flex:1;min-width:0;">
+    <div>
+      <span class="picker-species">${p.species}</span>
+      ${gradeHtml} ${verifiedHtml}
+    </div>
+    <div class="picker-meta">${p.vendor} ${p.flag}${dims ? ` <span class="picker-dims">· ${dims}</span>` : ''}</div>
+  </div>
+  <div class="picker-price">${p.price.toLocaleString('sv-SE')}<br><span class="picker-price-cur">SEK</span></div>
+</div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('picker-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closePicker() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function selectProduct(role, productId) {
+  const build = builds.find(b => b.id === currentBuildId);
+  if (!build.parts[role]) build.parts[role] = {};
+  build.parts[role].product_id = productId;
+  closePicker();
+  renderBuildDetail();
+}
+
+// Candidate filtering — mirrors backend logic
+function getCandidates(role, variant) {
+  const products = PRODUCTS[role] || [];
+  const results = [];
+
+  products.forEach(p => {
+    const verified = hasDims(p);
+    let dimOk = true;
+
+    if (verified) {
+      if (role === 'body') {
+        if (p.length_mm    && p.length_mm    < variant.body_length_mm)    dimOk = false;
+        if (p.width_mm     && p.width_mm     < variant.body_width_mm)     dimOk = false;
+        if (p.thickness_mm && p.thickness_mm < variant.body_thickness_mm) dimOk = false;
+      } else if (role === 'neck') {
+        const minLen = variant.construction === 'neck-through'
+          ? variant.neck_length_thru_mm : variant.neck_length_mm;
+        if (p.length_mm    && p.length_mm    < minLen)                       dimOk = false;
+        if (p.thickness_mm && p.thickness_mm < variant.neck_thickness_12f_mm) dimOk = false;
+      } else if (role === 'fretboard') {
+        const minLen = (variant.scale_mm || 864) + 20;
+        if (p.length_mm && p.length_mm < minLen) dimOk = false;
+      } else if (role === 'top') {
+        if (p.length_mm && p.length_mm < variant.body_length_mm) dimOk = false;
+        if (p.width_mm  && p.width_mm  < variant.body_width_mm)  dimOk = false;
+      }
+    }
+
+    if (dimOk) results.push({ product: p, dims_unverified: !verified });
+  });
+
+  // Sort by price
+  results.sort((a, b) => a.product.price - b.product.price);
+  return results;
+}
+
+// Close picker on overlay click
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closePicker();
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+renderBuildsIndex();
+</script>
+</body>
+</html>
