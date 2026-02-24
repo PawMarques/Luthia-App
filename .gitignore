@@ -6,7 +6,10 @@
 
 # Data
 luthia-data/
-luthia-app/static/product-images/
+
+# Files
+generate_file_list.py
+file_list.txt
 
 # IDE
 Luthia-App.code-workspace
