@@ -470,18 +470,11 @@ def import_vendor_products(file_path, sheet_name, alias_lookup=None):
         vendor.country = country
         db.session.commit()
 
-    # Clear existing products for this vendor before re-importing
-    Product.query.filter_by(vendor_id=vendor.vendor_id).delete()
-    db.session.commit()
-
     try:
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=1)
     except Exception as e:
         print(f"  Error reading sheet: {e}")
         return
-
-    count = 0
-    skipped = 0
 
     def find_col(columns, keywords, required=True):
         for keyword in keywords:
@@ -503,129 +496,140 @@ def import_vendor_products(file_path, sheet_name, alias_lookup=None):
         print(f"  Skipping {sheet_name} - required columns missing.")
         return
 
-    for _, row in df.iterrows():
-        scientific_name = str(row[sci_col]).strip()
+    try:
+        # Clear existing products for this vendor before re-importing
+        Product.query.filter_by(vendor_id=vendor.vendor_id).delete()
 
-        if pd.isna(scientific_name) or scientific_name == 'nan':
-            skipped += 1
-            continue
+        count = 0
+        skipped = 0
 
-        # --- Resolve species ---
-        # 1. Try scientific name via alias lookup (covers direct scientific match too)
-        species = alias_lookup.get(scientific_name.lower())
+        for _, row in df.iterrows():
+            scientific_name = str(row[sci_col]).strip()
 
-        # 2. Try 'as listed' name via alias lookup
-        listed_name = None
-        if listed_col and pd.notna(row[listed_col]):
-            listed_name = str(row[listed_col]).strip()
-            if not species and listed_name:
-                species = alias_lookup.get(listed_name.lower())
+            if pd.isna(scientific_name) or scientific_name == 'nan':
+                skipped += 1
+                continue
 
-        # 3. Fall back: create a new species record from scientific name
-        if not species:
-            commercial = _safe_str(row[df.columns[1]]) if len(df.columns) > 1 else None
-            species = Species(scientific_name=scientific_name, commercial_name=commercial)
-            db.session.add(species)
-            db.session.flush()
-            print(f"  Added unrecognised species: {scientific_name}")
-            # Add to lookup so subsequent rows with same name don't create duplicates
-            alias_lookup[scientific_name.lower()] = species
+            # --- Resolve species ---
+            # 1. Try scientific name via alias lookup (covers direct scientific match too)
+            species = alias_lookup.get(scientific_name.lower())
 
-        # 4. Register the vendor's listed name as a vendor alias if it's new
-        if listed_name and listed_name.lower() not in alias_lookup:
-            _add_alias(species, listed_name, 'vendor', source='vendor_sheet')
-            db.session.flush()
-            alias_lookup[listed_name.lower()] = species
+            # 2. Try 'as listed' name via alias lookup
+            listed_name = None
+            if listed_col and pd.notna(row[listed_col]):
+                listed_name = str(row[listed_col]).strip()
+                if not species and listed_name:
+                    species = alias_lookup.get(listed_name.lower())
 
-        if pd.isna(row['Category']):
-            skipped += 1
-            continue
+            # 3. Fall back: create a new species record from scientific name
+            if not species:
+                commercial = _safe_str(row[df.columns[1]]) if len(df.columns) > 1 else None
+                species = Species(scientific_name=scientific_name, commercial_name=commercial)
+                db.session.add(species)
+                db.session.flush()
+                print(f"  Added unrecognised species: {scientific_name}")
+                # Add to lookup so subsequent rows with same name don't create duplicates
+                alias_lookup[scientific_name.lower()] = species
 
-        category_name = str(row['Category']).strip()
-        category = Category.query.filter_by(name=category_name).first()
-        if not category:
-            category = Category(name=category_name)
-            db.session.add(category)
-            db.session.flush()
+            # 4. Register the vendor's listed name as a vendor alias if it's new
+            if listed_name and listed_name.lower() not in alias_lookup:
+                _add_alias(species, listed_name, 'vendor', source='vendor_sheet')
+                db.session.flush()
+                alias_lookup[listed_name.lower()] = species
 
-        grade = None
-        if pd.notna(row['Grade']) and str(row['Grade']).strip():
-            grade_name = str(row['Grade']).strip()
-            grade = Grade.query.filter_by(name=grade_name).first()
-            if not grade:
-                grade = Grade(name=grade_name)
-                db.session.add(grade)
+            if pd.isna(row['Category']):
+                skipped += 1
+                continue
+
+            category_name = str(row['Category']).strip()
+            category = Category.query.filter_by(name=category_name).first()
+            if not category:
+                category = Category(name=category_name)
+                db.session.add(category)
                 db.session.flush()
 
-        format_obj = None
-        if pd.notna(row['Format']) and str(row['Format']).strip():
-            format_name = str(row['Format']).strip()
-            format_obj = Format.query.filter_by(name=format_name).first()
-            if not format_obj:
-                format_obj = Format(name=format_name)
-                db.session.add(format_obj)
-                db.session.flush()
+            grade = None
+            if pd.notna(row['Grade']) and str(row['Grade']).strip():
+                grade_name = str(row['Grade']).strip()
+                grade = Grade.query.filter_by(name=grade_name).first()
+                if not grade:
+                    grade = Grade(name=grade_name)
+                    db.session.add(grade)
+                    db.session.flush()
 
-        unit = None
-        if pd.notna(row['Unit']):
-            unit_name = str(row['Unit']).strip()
-            unit = Unit.query.filter_by(name=unit_name).first()
+            format_obj = None
+            if pd.notna(row['Format']) and str(row['Format']).strip():
+                format_name = str(row['Format']).strip()
+                format_obj = Format.query.filter_by(name=format_name).first()
+                if not format_obj:
+                    format_obj = Format(name=format_name)
+                    db.session.add(format_obj)
+                    db.session.flush()
 
-        price = safe_float(row[price_col])
-        if price is None:
-            skipped += 1
-            continue
+            unit = None
+            if pd.notna(row['Unit']):
+                unit_name = str(row['Unit']).strip()
+                unit = Unit.query.filter_by(name=unit_name).first()
 
-        thickness_mm = safe_float(row['Thickness (mm)'])
-        width_mm = safe_float(row['Width (mm)'])
+            price = safe_float(row[price_col])
+            if price is None:
+                skipped += 1
+                continue
 
-        if mm_length_col:
-            length_value = safe_float(row[mm_length_col])
-        elif m_length_col:
-            raw = safe_float(row[m_length_col])
-            length_value = raw * 1000 if raw is not None else None
-        else:
-            length_value = None
+            thickness_mm = safe_float(row['Thickness (mm)'])
+            width_mm = safe_float(row['Width (mm)'])
 
-        weight_kg = safe_float(row['Weight (kg)'])
+            if mm_length_col:
+                length_value = safe_float(row[mm_length_col])
+            elif m_length_col:
+                raw = safe_float(row[m_length_col])
+                length_value = raw * 1000 if raw is not None else None
+            else:
+                length_value = None
 
-        # Read Last Updated from Excel, fall back to now if missing or unparseable
-        last_updated = None
-        if 'Last Updated' in df.columns and pd.notna(row['Last Updated']):
-            try:
-                last_updated = pd.to_datetime(row['Last Updated']).to_pydatetime()
-            except Exception:
-                pass
-        if last_updated is None:
-            from datetime import datetime
-            last_updated = datetime.utcnow()
+            weight_kg = safe_float(row['Weight (kg)'])
 
-        product = Product(
-            species_id=species.species_id,
-            vendor_id=vendor.vendor_id,
-            category_id=category.category_id,
-            grade_id=grade.grade_id if grade else None,
-            format_id=format_obj.format_id if format_obj else None,
-            unit_id=unit.unit_id if unit else None,
-            species_as_listed=listed_name or scientific_name,
-            thickness_mm=thickness_mm,
-            width_mm=width_mm,
-            length_mm=length_value,
-            weight_kg=weight_kg,
-            price=price,
-            currency='SEK' if 'sek' in price_col.lower() else 'EUR',
-            in_stock=str(row['In Stock']).lower() == 'yes' if pd.notna(row['In Stock']) else True,
-            product_url=str(row['Product URL']) if pd.notna(row['Product URL']) else None,
-            last_updated=last_updated
-        )
-        db.session.add(product)
-        count += 1
+            # Read Last Updated from Excel, fall back to now if missing or unparseable
+            last_updated = None
+            if 'Last Updated' in df.columns and pd.notna(row['Last Updated']):
+                try:
+                    last_updated = pd.to_datetime(row['Last Updated']).to_pydatetime()
+                except Exception:
+                    pass
+            if last_updated is None:
+                from datetime import datetime
+                last_updated = datetime.utcnow()
 
-    db.session.commit()
-    print(f"  {count} products imported ({skipped} skipped)")
+            product = Product(
+                species_id=species.species_id,
+                vendor_id=vendor.vendor_id,
+                category_id=category.category_id,
+                grade_id=grade.grade_id if grade else None,
+                format_id=format_obj.format_id if format_obj else None,
+                unit_id=unit.unit_id if unit else None,
+                species_as_listed=listed_name or scientific_name,
+                thickness_mm=thickness_mm,
+                width_mm=width_mm,
+                length_mm=length_value,
+                weight_kg=weight_kg,
+                price=price,
+                currency='SEK' if 'sek' in price_col.lower() else 'EUR',
+                in_stock=str(row['In Stock']).lower() == 'yes' if pd.notna(row['In Stock']) else True,
+                product_url=str(row['Product URL']) if pd.notna(row['Product URL']) else None,
+                last_updated=last_updated
+            )
+            db.session.add(product)
+            count += 1
+
+        db.session.commit()
+        print(f"  {count} products imported ({skipped} skipped)")
+    except Exception as e:
+        db.session.rollback()
+        print(f"  Error importing vendor '{vendor_name}': {e}")
+        raise
 
 
-def run_import():
+def run_import(dry_run=False):
     """Main import function"""
 
     print("\n" + "="*60)
@@ -718,6 +722,10 @@ def run_import():
         if not any_changes:
             print("\n  Database is already up to date.")
 
+        if dry_run:
+            print("\nDry run complete. No changes made.")
+            return
+
         # --- Confirm before proceeding ---
         print("\n" + "="*60)
         confirm = input("Proceed with import? (y/n): ").strip().lower()
@@ -745,12 +753,11 @@ def run_import():
         print("-" * 60)
 
         for sheet_name in vendor_sheets:
+            vendor_name, _ = parse_vendor_info(sheet_name, suppliers_file)
             try:
                 import_vendor_products(suppliers_file, sheet_name, alias_lookup=alias_lookup)
             except Exception as e:
-                print(f"  Error importing sheet '{sheet_name}': {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"  Failed to import '{vendor_name}' ({sheet_name}): {e}")
 
         print("-" * 60)
         print("\nIMPORT COMPLETE!\n")
@@ -763,4 +770,9 @@ def run_import():
 
 
 if __name__ == '__main__':
-    run_import()
+    import argparse
+    parser = argparse.ArgumentParser(description='Import tonewood data from Excel files.')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Show change report without importing any data.')
+    args = parser.parse_args()
+    run_import(dry_run=args.dry_run)
