@@ -15,8 +15,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = os.path.expanduser(
-        os.environ.get('UPLOAD_FOLDER', 'luthia-data/product-images')
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or os.path.join(
+        os.path.dirname(basedir), 'luthia-data', 'product-images'
     )
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-only-insecure-key')
 
