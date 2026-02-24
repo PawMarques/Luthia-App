@@ -39,6 +39,7 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
 
     app.config['SQLALCHEMY_DATABASE_URI']  = f'sqlite:///{os.path.join(basedir, "luthia.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-only-insecure-key')
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'product-images')
 
     # Apply test overrides before makedirs and db.init_app so they take effect.
