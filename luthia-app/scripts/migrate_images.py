@@ -4,14 +4,14 @@ Run once: python3 migrate_images.py
 Safe to run multiple times — skips if table already exists.
 """
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask
 from models import db
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(os.path.dirname(basedir), "luthia-data", "luthia.db")}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(os.path.dirname(os.path.dirname(basedir)), "luthia-data", "luthia.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -40,7 +40,7 @@ with app.app_context():
         print('Created product_images table.')
 
     # Create upload folder
-    upload_folder = os.path.join(basedir, 'static', 'product-images')
+    upload_folder = os.path.join(os.path.dirname(os.path.dirname(basedir)), 'luthia-data', 'product-images')
     os.makedirs(upload_folder, exist_ok=True)
     print(f'Upload folder ready: {upload_folder}')
     print('Migration complete.')

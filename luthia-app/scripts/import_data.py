@@ -3,14 +3,14 @@ import re
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask
 from models import db, Species, SpeciesAlias, Vendor, Category, Grade, Format, Unit, Product
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(os.path.dirname(basedir), "luthia-data", "luthia.db")}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(os.path.dirname(os.path.dirname(basedir)), "luthia-data", "luthia.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -187,7 +187,6 @@ def build_alias_lookup():
     for alias in SpeciesAlias.query.all():
         lookup[alias.alias_name.lower()] = alias.species
     return lookup
-
 
 def parse_vendor_info(sheet_name, file_path):
     """Extract vendor name and country from the title banner in row 0.
@@ -647,7 +646,7 @@ def run_import(dry_run=False):
         species_file   = species_file or None
     else:
         data_sources_dir = os.path.normpath(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data-sources')
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data-sources')
         )
 
         xlsx_files = sorted(

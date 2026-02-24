@@ -1,4 +1,5 @@
 import openpyxl
+import os
 from openpyxl.styles import Font, PatternFill, Alignment
 import math
 
@@ -92,5 +93,6 @@ for scale_length, scale_name, fret_counts in bass_scales:
         current_row = create_fret_table(ws, scale_length, scale_name, num_frets, current_row)
 
 # Save the file
-wb.save('fret_placement_tables.xlsx')
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'luthia-data', 'fret_placement_tables.xlsx')
+wb.save(output_path)
 print("Excel file 'fret_placement_tables.xlsx' created successfully!")
