@@ -6,16 +6,6 @@ https://raw.githubusercontent.com/PawMarques/Luthia-App/main/generate_file_list.
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.claude/settings.local.json
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.vscode/launch.json
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/.vscode/settings.json
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/JINJA2_MACROS.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/REFACTORING.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/TESTS.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/code-quality-fixes-2026-02-23.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/implementation_guide.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/luthia-brand-reference.pdf
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/quick_start_guide.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood-ui-redesign-plan.md
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood_database_schema.png
-https://raw.githubusercontent.com/PawMarques/Luthia-App/main/documents/tonewood_db_diagram.md
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/app.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/config.py
 https://raw.githubusercontent.com/PawMarques/Luthia-App/main/luthia-app/fret_calc_excel.py
