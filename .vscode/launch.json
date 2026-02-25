@@ -14,7 +14,7 @@
             "args": ["run", "--no-debugger", "--no-reload"],
             "jinja": true,
             "autoStartBrowser": false,
-            "postDebugTask": "Open Luthia Web App"  // or use preLaunchTask with a longer sleep
+            //"postDebugTask": "Open Luthia Web App"  // or use preLaunchTask with a longer sleep
         }
     ]
 }
