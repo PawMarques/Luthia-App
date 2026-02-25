@@ -1,0 +1,12 @@
+// .vscode/tasks.json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Open Luthia Web App",
+            "type": "shell",
+            "command": "sleep 1 && open -a ~/Applications/Luthia.app",
+            "isBackground": true
+        }
+    ]
+}
