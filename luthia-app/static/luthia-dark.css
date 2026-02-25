@@ -97,6 +97,10 @@ body {
   border-bottom: 1px solid #27272a;
 }
 
+.brand-logo .logo-accent {
+  fill: var(--accent);
+}
+
 .brand-name {
   color: var(--accent);
 }
@@ -461,7 +465,7 @@ tbody tr.data-row.active-row {
   box-shadow: inset 3px 0 0 #3b82f6;
 }
 
-tr.detail-expand-row, td.detail-expand-cell {
+tr.detail-expand-row td.detail-expand-cell {
   background: #111113;
   border-bottom: 2px solid #3b82f6;
 }

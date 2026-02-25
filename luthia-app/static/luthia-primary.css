@@ -2589,3 +2589,400 @@ table.fc-table {
     justify-content: flex-start;
   }
 }
+
+
+/* ── MISSING STRUCTURAL BLOCKS ───────────────────────────────────
+   These rules define the layout skeleton for components whose
+   colour is declared in luthia-dark.css and luthia-light.css.
+   They were omitted from the initial primary.css build.
+─────────────────────────────────────────────────────────────────── */
+
+
+/* ── NAV ITEMS ───────────────────────────────────────────────── */
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  margin: 1px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+
+/* ── SIDEBAR FOOTER INNER ────────────────────────────────────── */
+
+.sidebar-footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  overflow: hidden;
+}
+
+
+/* ── SIDEBAR TRIGGER ─────────────────────────────────────────── */
+
+.sidebar-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+
+/* ── MODE TOGGLE ─────────────────────────────────────────────── */
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+
+/* ── TABLE HEAD & BODY ───────────────────────────────────────── */
+
+thead th {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+thead th::after {
+  margin-left: 4px;
+  content: '';
+}
+
+thead th.sorted::after {
+  content: ' ↓';
+}
+
+thead th.sorted.asc::after {
+  content: ' ↑';
+}
+
+
+/* ── VIEW LINK (external product link) ───────────────────────── */
+
+.view-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+
+/* ── RESULTS BAR ─────────────────────────────────────────────── */
+
+.results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px 8px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+
+/* ── EDIT BUTTON ─────────────────────────────────────────────── */
+
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.edit-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+
+/* ── EDIT INPUT ──────────────────────────────────────────────── */
+
+.edit-input {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+
+/* ── EDIT TOGGLE TRACK ───────────────────────────────────────── */
+
+.edit-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: 1px solid;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+
+/* ── IMAGE COMPONENTS ────────────────────────────────────────── */
+
+.img-thumb-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: zoom-in;
+  transition: border-color 0.15s;
+}
+
+.img-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.img-thumb-wrap:hover .img-delete-btn {
+  opacity: 1;
+}
+
+.img-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border: 1.5px dashed;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 201;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+
+/* ── SHARED BUTTONS (btn-primary, btn-danger, btn-sm) ────────── */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.edit-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.edit-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+
+/* ── BUILD CARD (link element) ───────────────────────────────── */
+
+.build-card {
+  display: block;
+  padding: 18px 20px;
+  border: 1px solid;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.1s;
+}
+
+.btn-delete-build {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+
+/* ── BUILDS.CSS STRUCTURAL RULES (absorbed) ──────────────────── */
+
+.part-row:last-child {
+  border-bottom: none;
+}
+
+.part-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.picker-row:last-child {
+  border-bottom: none;
+}
+
+.picker-dims {
+  font-size: 11px;
+}
+
+.tpl-dim-row {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.accent-checkbox {
+  accent-color: var(--accent);
+}

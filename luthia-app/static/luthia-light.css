@@ -111,6 +111,10 @@
   border-bottom: 1px solid #e7e5e4;
 }
 
+[data-mode="light"] .brand-logo .logo-accent {
+  fill: var(--accent);
+}
+
 [data-mode="light"] .brand-name {
   color: var(--accent);
 }
@@ -509,7 +513,7 @@
 }
 
 [data-mode="light"] .detail-grid {
-  border: 1px solid #e7e5e4;
+  border-color: #e7e5e4;
 }
 
 [data-mode="light"] .detail-col-gap {
