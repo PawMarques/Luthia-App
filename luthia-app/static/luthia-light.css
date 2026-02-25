@@ -260,7 +260,7 @@
 [data-mode="light"] .sidebar-rail::after   { background: #d6d3d1; }
 [data-mode="light"] .sidebar-header        { border-bottom-color: #e7e5e4; }
 [data-mode="light"] .brand-name            { color: var(--accent); }
-[data-mode="light"] .brand-sub             { color: #a8a29e; }
+[data-mode="light"] .brand-sub             { color: #18181B; }
 [data-mode="light"] .nav-group-label       { color: #a8a29e; }
 [data-mode="light"] .nav-divider           { background: #e7e5e4; }
 

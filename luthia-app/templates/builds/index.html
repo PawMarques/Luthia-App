@@ -13,9 +13,11 @@
 
 {% block content %}
 <div class="builds-wrap">
+<!--
   <div class="page-title-bar">
     <div class="page-title">Current builds</div>
   </div>
+-->
   <div class="builds-grid">
     {% for b in builds %}
       {% set parts_done   = b.parts | selectattr('product_id') | list | length %}

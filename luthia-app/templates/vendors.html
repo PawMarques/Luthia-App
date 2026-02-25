@@ -403,11 +403,11 @@
 <div class="vendors-wrap">
 
   <div class="vendors-header">
-    <div class="page-title">Vendors</div>
+    <!--<div class="page-title">Vendors</div>-->
     <div class="page-title-sub">
-      {{ vendors | length }} vendor{{ 's' if vendors | length != 1 else '' }} ·
+      <span class="sg-meta-item"><strong>{{ vendors | length }}</strong> vendor{{ 's' if vendors | length != 1 else '' }} ·
       {% set active_count = vendors | selectattr('0.active') | list | length %}
-      {{ active_count }} active
+      <strong>{{ active_count }}</strong> active</span>
     </div>
   </div>
 
