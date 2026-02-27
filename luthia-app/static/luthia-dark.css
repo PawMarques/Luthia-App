@@ -1606,3 +1606,136 @@ tr.is-octave .fc-fret-num {
 .toast.is-error {
   border-left-color: #ef4444;
 }
+
+/* 
+═══════════════════════════════════════════════════════════════
+   LUTHIA DARK CSS — PATCH: Unified page layout colours
+═══════════════════════════════════════════════════════════════ 
+*/
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+.page-toolbar {
+  background: #111113;
+  border-bottom: 1px solid #27272a;
+}
+
+.toolbar-stat {
+  color: #52525b;
+}
+
+.toolbar-stat strong {
+  color: #a1a1aa;
+}
+
+.toolbar-count {
+  color: #52525b;
+}
+
+.toolbar-count strong {
+  color: #a1a1aa;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+.results-footer {
+  color: #52525b;
+  border-top: 1px solid #27272a;
+}
+
+/* 
+═══════════════════════════════════════════════════════════════
+   LUTHIA DARK CSS — PATCH: Unified page layout colours
+═══════════════════════════════════════════════════════════════ 
+*/
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+.page-toolbar {
+  background: #111113;
+  border-bottom: 1px solid #27272a;
+}
+
+.toolbar-stat {
+  color: #52525b;
+}
+
+.toolbar-stat strong {
+  color: #a1a1aa;
+}
+
+.toolbar-count {
+  color: #52525b;
+}
+
+.toolbar-count strong {
+  color: #a1a1aa;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+.results-footer {
+  color: #52525b;
+  border-top: 1px solid #27272a;
+}
+
+
+/* ── SPECIES GUIDE: list + badge colours ─────────────────────── */
+
+.sg-avail-badge {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LUTHIA DARK CSS — PATCH: Unified page layout colours
+   Append these rules to luthia-dark.css
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+.page-toolbar {
+  background: #111113;
+  border-bottom: 1px solid #27272a;
+}
+
+.toolbar-stat {
+  color: #52525b;
+}
+
+.toolbar-stat strong {
+  color: #a1a1aa;
+}
+
+.toolbar-count {
+  color: #52525b;
+}
+
+.toolbar-count strong {
+  color: #a1a1aa;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+.results-footer {
+  color: #52525b;
+  border-top: 1px solid #27272a;
+}
+
+
+/* ── SPECIES GUIDE: list + badge colours ─────────────────────── */
+
+.sg-avail-badge {
+  color: #a1a1aa;
+  border-color: #3f3f46;
+}
+
+.sg-price-label {
+  color: var(--accent);
+}

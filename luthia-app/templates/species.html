@@ -2,51 +2,57 @@
 
 {% block title %}{{ page_title }}{% endblock %}
 
-{% block extra_css %}{% endblock %}
-
 {% block content %}
-<div class="sg-wrap">
 
-  <!-- Page header -->
-  <div class="sg-header">
-    <!--<div class="page-title">Species Guide</div>-->
-    <div class="sg-meta">
-      <span class="sg-meta-item"><strong>{{ total_species }}</strong> species</span>
-      <span class="sg-meta-item"><strong>{{ in_stock_count }}</strong> available from vendors</span>
-      <span class="sg-meta-item"><strong>{{ cites_count }}</strong> CITES listed</span>
+{# ── Sticky toolbar: search + filter pills left, stats + count right ── #}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+
+    <div class="toolbar-filters">
+      <div class="sg-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="sg-search" id="sg-search" type="search"
+               placeholder="Search by name, origin, alias…" autocomplete="off">
+      </div>
+
+      <div class="sg-filters">
+        <button class="sg-filter-btn is-active" id="filter-all"       data-filter="all">All species</button>
+        <button class="sg-filter-btn"           id="filter-available" data-filter="available">In stock</button>
+        <button class="sg-filter-btn"           id="filter-cites"     data-filter="cites">CITES listed</button>
+      </div>
     </div>
+
+    <div class="toolbar-right">
+      <span class="toolbar-stat">
+        <strong>{{ total_species }}</strong> species ·
+        <strong>{{ in_stock_count }}</strong> available ·
+        <strong>{{ cites_count }}</strong> CITES
+      </span>
+      <span class="toolbar-count" id="sg-count"></span>
+    </div>
+
   </div>
+</div>
 
-  <!-- Toolbar: search + filters -->
-  <div class="sg-toolbar">
-    <div class="sg-search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input class="sg-search" id="sg-search" type="search"
-             placeholder="Search by name, origin, alias…" autocomplete="off">
-    </div>
+{# ── Main content ── #}
+<div class="page-wrap">
 
-    <div class="sg-filters">
-      <button class="sg-filter-btn is-active" id="filter-all"       data-filter="all">All species</button>
-      <button class="sg-filter-btn"           id="filter-available" data-filter="available">In stock</button>
-      <button class="sg-filter-btn"           id="filter-cites"     data-filter="cites">CITES listed</button>
-    </div>
-
-    <span class="sg-count" id="sg-count"></span>
-  </div>
-
-  <!-- Species grid -->
-  <div class="sg-grid" id="sg-grid">
+  {# Species card grid #}
+  <div class="sg-list" id="sg-grid">
     <div class="sg-loading">Loading species…</div>
   </div>
 
-  <!-- Pagination -->
-  <div class="sg-pagination" id="sg-pagination"></div>
+  {# Pagination + footer #}
+  <div class="results-footer">
+    <span></span>
+    <div class="sg-pagination" id="sg-pagination"></div>
+  </div>
 
 </div>
 
-<!-- ── Detail drawer ──────────────────────────────────────── -->
+{# ── Detail drawer ──────────────────────────────────────────── #}
 <div class="sg-drawer-backdrop" id="sg-drawer-backdrop">
   <div class="sg-drawer" id="sg-drawer">
     <div class="sg-drawer-header">
@@ -94,7 +100,7 @@ async function loadGrid() {
   document.getElementById('sg-count').textContent = '';
 
   const params = new URLSearchParams({ page: state.page });
-  if (state.q)                    params.set('q', state.q);
+  if (state.q)                      params.set('q', state.q);
   if (state.filter === 'cites')     params.set('cites', '1');
   if (state.filter === 'available') params.set('available', '1');
 
@@ -129,50 +135,77 @@ async function loadGrid() {
   renderPagination(data.page, data.pages);
 }
 
-// ── Card HTML ─────────────────────────────────────────────────
+// ── Horizontal Blocks HTML ─────────────────────────────────────────────────
 function renderCard(s) {
-  const name       = s.commercial_name || `<em>${esc(s.scientific_name)}</em>`;
-  const hasName    = !!s.commercial_name;
-  const citesHtml  = s.cites_listed
-    ? `<span class="badge-cites">CITES</span>`
+  const hasName  = !!s.commercial_name;
+  const title    = hasName ? esc(s.commercial_name) : `<em>${esc(s.scientific_name)}</em>`;
+  const subtitle = hasName ? esc(s.scientific_name) : '';
+
+  // ── Header right: product count + action buttons ──────────────
+  const countHtml = s.total_products > 0
+    ? `<span class="tpl-builds-count">${s.total_products} product${s.total_products !== 1 ? 's' : ''}</span>`
     : '';
 
-  const originHtml = s.origin
-    ? `<div class="sg-origin">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/>
-        </svg>
-        ${esc(s.origin)}
-       </div>`
-    : `<div class="sg-origin sg-origin--empty">—</div>`;
+  const actionsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      ${countHtml}
+      <button class="btn-sm" onclick="event.stopPropagation();openDrawer(${s.species_id})">Details</button>
+      <a class="btn-sm btn-sm--accent" href="/browse?species_id=${s.species_id}">Browse</a>
+    </div>`;
 
-  let footHtml;
+  // ── Variant header: price range label + CITES badge ───────────
+  const priceLabel = s.min_price != null
+    ? (s.min_price === s.max_price
+        ? fmtPrice(s.min_price)
+        : fmtPrice(s.min_price) + ' – ' + fmtPrice(s.max_price))
+    : 'Not available';
+
+  const citesBadge = s.cites_listed
+    ? `<span class="tpl-construction-badge">CITES</span>`
+    : '';
+
+  // ── Dims rows: Origin + Vendors ───────────────────────────────
+  const originRow = s.origin
+    ? `<div class="tpl-dim-row"><span>Origin</span><span>${esc(s.origin)}</span></div>`
+    : '';
+
+  let vendorRow;
   if (s.total_products > 0) {
     const pills = s.vendors.map(v =>
       `<span class="sg-vendor-pill">${v.flag} ${esc(v.name)}</span>`
     ).join('');
-    const priceHtml = s.min_price != null
-      ? `<span class="sg-price-range">${s.min_price === s.max_price
-          ? fmtPrice(s.min_price)
-          : fmtPrice(s.min_price) + ' – ' + fmtPrice(s.max_price)}</span>`
-      : '';
-    footHtml = `${pills}${priceHtml}`;
+    vendorRow = `<div class="tpl-dim-row">
+      <span>Vendors</span>
+      <span style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">${pills}</span>
+    </div>`;
   } else {
-    footHtml = `<span class="sg-no-products">Not available from vendors</span>`;
+    vendorRow = `<div class="tpl-dim-row">
+      <span>Vendors</span>
+      <span class="sg-no-products">Not available from vendors</span>
+    </div>`;
   }
 
   return `
-<div class="sg-card${hasName ? '' : ' sg-no-name'}" id="sg-card-${s.species_id}"
-     onclick="openDrawer(${s.species_id})">
-  <div class="sg-card-top">
-    <div class="sg-card-names">
-      <div class="sg-commercial">${hasName ? esc(s.commercial_name) : esc(s.scientific_name)}</div>
-      <div class="sg-scientific">${esc(s.scientific_name)}</div>
+<div class="tpl-card sg-card" id="sg-card-${s.species_id}">
+  <div class="tpl-card-header">
+    <div>
+      <div class="tpl-card-title">${title}</div>
+      ${subtitle ? `<div class="tpl-card-type">${subtitle}</div>` : ''}
     </div>
-    ${citesHtml}
+    ${actionsHtml}
   </div>
-  ${originHtml}
-  <div class="sg-card-foot">${footHtml}</div>
+  <div class="tpl-variant">
+    <div class="tpl-variant-header">
+      <div>
+        <span class="tpl-variant-label sg-price-label">${priceLabel}</span>
+        ${citesBadge}
+      </div>
+    </div>
+    <div class="tpl-dims">
+      ${originRow}
+      ${vendorRow}
+    </div>
+  </div>
 </div>`;
 }
 
@@ -183,7 +216,6 @@ function renderPagination(page, pages) {
 
   let html = `<button class="sg-page-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
 
-  // Show up to 7 page buttons with ellipsis
   const range = pageRange(page, pages);
   let prev = null;
   for (const p of range) {
@@ -210,7 +242,6 @@ function goPage(p) {
 
 // ── Detail drawer ─────────────────────────────────────────────
 async function openDrawer(speciesId) {
-  // Deactivate previous
   if (state.activeId) {
     const prev = document.getElementById(`sg-card-${state.activeId}`);
     if (prev) prev.classList.remove('is-active');
@@ -220,7 +251,6 @@ async function openDrawer(speciesId) {
   const card = document.getElementById(`sg-card-${speciesId}`);
   if (card) card.classList.add('is-active');
 
-  // Show backdrop and reset body
   const backdrop = document.getElementById('sg-drawer-backdrop');
   backdrop.classList.add('is-open');
   document.getElementById('drawer-commercial').textContent = '…';
@@ -247,7 +277,6 @@ function renderDrawer(d) {
   }
   document.getElementById('drawer-badges').innerHTML = badges.join('');
 
-  // Build body sections
   let html = '';
 
   // ── Names section
@@ -276,7 +305,7 @@ function renderDrawer(d) {
   }
   html += `</div></div>`;
 
-  // ── Aliases / vendor names section
+  // ── Aliases section
   const vendorAliases = (d.aliases.vendor || []);
   const otherAliases  = Object.entries(d.aliases)
     .filter(([lang]) => lang !== 'vendor')

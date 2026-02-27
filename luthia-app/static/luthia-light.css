@@ -1644,3 +1644,136 @@
 [data-mode="light"] ::-webkit-scrollbar-thumb:hover {
   background: #a8a29e;
 }
+
+/* 
+═══════════════════════════════════════════════════════════════
+   LUTHIA LIGHT CSS — PATCH: Unified page layout colours
+═══════════════════════════════════════════════════════════════ 
+*/
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+[data-mode="light"] .page-toolbar {
+  background: #f5f5f4;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+[data-mode="light"] .toolbar-stat {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-stat strong {
+  color: #44403c;
+}
+
+[data-mode="light"] .toolbar-count {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-count strong {
+  color: #44403c;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+[data-mode="light"] .results-footer {
+  color: #a8a29e;
+  border-top: 1px solid #e7e5e4;
+}
+
+/* 
+═══════════════════════════════════════════════════════════════
+   LUTHIA LIGHT CSS — PATCH: Unified page layout colours
+═══════════════════════════════════════════════════════════════ 
+*/
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+[data-mode="light"] .page-toolbar {
+  background: #f5f5f4;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+[data-mode="light"] .toolbar-stat {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-stat strong {
+  color: #44403c;
+}
+
+[data-mode="light"] .toolbar-count {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-count strong {
+  color: #44403c;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+[data-mode="light"] .results-footer {
+  color: #a8a29e;
+  border-top: 1px solid #e7e5e4;
+}
+
+
+/* ── SPECIES GUIDE: list + badge colours ─────────────────────── */
+
+[data-mode="light"] .sg-avail-badge {
+  color: #44403c;
+  border-color: #d6d3d1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LUTHIA LIGHT CSS — PATCH: Unified page layout colours
+   Append these rules to luthia-light.css
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
+
+[data-mode="light"] .page-toolbar {
+  background: #f5f5f4;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+[data-mode="light"] .toolbar-stat {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-stat strong {
+  color: #44403c;
+}
+
+[data-mode="light"] .toolbar-count {
+  color: #a8a29e;
+}
+
+[data-mode="light"] .toolbar-count strong {
+  color: #44403c;
+}
+
+
+/* ── RESULTS FOOTER ──────────────────────────────────────────── */
+
+[data-mode="light"] .results-footer {
+  color: #a8a29e;
+  border-top: 1px solid #e7e5e4;
+}
+
+
+/* ── SPECIES GUIDE: list + badge colours ─────────────────────── */
+
+[data-mode="light"] .sg-avail-badge {
+  color: #44403c;
+  border-color: #d6d3d1;
+}
+
+[data-mode="light"] .sg-price-label {
+  color: var(--accent);
+}

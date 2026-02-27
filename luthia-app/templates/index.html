@@ -1,73 +1,83 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="filter-bar">
-  <div class="filter-bar-row">
-    <div class="filter-group">
-      <label class="filter-label">Species</label>
-      <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
-        <option value="">All species</option>
-        {% for s, cnt in species_list %}
-        <option value="{{ s.species_id }}">{{ s.commercial_name or s.scientific_name }} ({{ cnt }})</option>
-        {% endfor %}
-      </select>
+
+{# ── Sticky toolbar: filters left, count + top pagination right ── #}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+
+    <div class="toolbar-filters">
+      <div class="filter-group">
+        <label class="filter-label">Species</label>
+        <select id="f-species" class="filter-select" onchange="onFilterChange('species')">
+          <option value="">All species</option>
+          {% for s, cnt in species_list %}
+          <option value="{{ s.species_id }}">{{ s.commercial_name or s.scientific_name }} ({{ cnt }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Vendor</label>
+        <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
+          <option value="">All vendors</option>
+          {% for v, cnt in vendors %}
+          <option value="{{ v.vendor_id }}">{{ v.name }} · {{ v.country }} {{ v.country | vendor_flag }} ({{ cnt }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
+          <option value="">All categories</option>
+          {% for c, cnt in categories %}
+          <option value="{{ c.category_id }}" data-name="{{ c.name }}">{{ c.name }} ({{ cnt }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group" id="format-group" style="display:none;">
+        <label class="filter-label">Format</label>
+        <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
+          <option value="">All formats</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Max price (SEK)</label>
+        <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
+      </div>
     </div>
-    <div class="filter-group">
-      <label class="filter-label">Vendor</label>
-      <select id="f-vendor" class="filter-select" onchange="onFilterChange('vendor')">
-        <option value="">All vendors</option>
-        {% for v, cnt in vendors %}
-        <option value="{{ v.vendor_id }}">{{ v.name }} · {{ v.country }} {{ v.country | vendor_flag }} ({{ cnt }})</option>
-        {% endfor %}
-      </select>
+
+    <div class="toolbar-right">
+      <span class="toolbar-count" id="results-text">Loading…</span>
+      <div class="pager" id="pager-top"></div>
     </div>
-    <div class="filter-group">
-      <label class="filter-label">Category</label>
-      <select id="f-category" class="filter-select" onchange="onFilterChange('category')">
-        <option value="">All categories</option>
-        {% for c, cnt in categories %}
-        <option value="{{ c.category_id }}" data-name="{{ c.name }}">{{ c.name }} ({{ cnt }})</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="filter-group" id="format-group" style="display:none;">
-      <label class="filter-label">Format</label>
-      <select id="f-format" class="filter-select" onchange="onFilterChange('format')">
-        <option value="">All formats</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label class="filter-label">Max price (SEK)</label>
-      <input type="number" id="f-price" class="filter-input" placeholder="e.g. 500" oninput="onPriceInput()">
-    </div>
+
   </div>
   <div class="chips-row" id="chips-row"></div>
 </div>
 
-<div class="main">
-
-  <div class="results-bar">
-    <span id="results-text">Loading…</span>
-    <div class="pager" id="pager-top"></div>
-  </div>
-
+{# ── Main content ── #}
+<div class="page-wrap">
   <div class="table-wrap">
     <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th data-col="species"  onclick="sortBy('species')" >Species</th>
-          <th data-col="vendor"   onclick="sortBy('vendor')"  >Vendor</th>
-          <th data-col="category" onclick="sortBy('category')">Category</th>
-          <th data-col="format"   onclick="sortBy('format')"  >Format</th>
-          <th data-col="grade"    onclick="sortBy('grade')"   >Grade</th>
-          <th data-col="price"    onclick="sortBy('price')"   >Price</th>
-          <th>Updated</th>
-          <th>Link</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+      <table>
+        <thead>
+          <tr>
+            <th data-col="species"  onclick="sortBy('species')" >Species</th>
+            <th data-col="vendor"   onclick="sortBy('vendor')"  >Vendor</th>
+            <th data-col="category" onclick="sortBy('category')">Category</th>
+            <th data-col="format"   onclick="sortBy('format')"  >Format</th>
+            <th data-col="grade"    onclick="sortBy('grade')"   >Grade</th>
+            <th data-col="price"    onclick="sortBy('price')"   >Price</th>
+            <th>Updated</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
     <div class="table-footer">
       <span class="footer-count" id="footer-count"></span>
@@ -75,6 +85,7 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}

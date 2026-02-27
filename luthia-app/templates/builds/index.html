@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macros/builds.html' import build_card %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/builds.css">
-{% endblock %}
-
 {% block header_actions %}
 <div class="header-actions">
   <a href="/builds/new" class="btn-new-build">+ New Build</a>
@@ -12,12 +8,20 @@
 {% endblock %}
 
 {% block content %}
-<div class="builds-wrap">
-<!--
-  <div class="page-title-bar">
-    <div class="page-title">Current builds</div>
+
+{# ── Sticky toolbar: build count stat ── #}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+    <div class="toolbar-right">
+      <span class="toolbar-stat">
+        <strong>{{ builds | length }}</strong> build{{ 's' if builds | length != 1 else '' }}
+      </span>
+    </div>
   </div>
--->
+</div>
+
+{# ── Main content ── #}
+<div class="page-wrap">
   <div class="builds-grid">
     {% for b in builds %}
       {% set parts_done   = b.parts | selectattr('product_id') | list | length %}
@@ -25,8 +29,11 @@
       {% set progress_pct = ((parts_done / parts_total) * 100) | int if parts_total else 0 %}
       {{ build_card(b, parts_done, parts_total, progress_pct) }}
     {% else %}
-      <p style="color:#52525b;text-align:center;padding:40px 0;">No builds yet. <a href="/builds/new" class="accent-link">Create your first one!</a></p>
+      <p style="color:#52525b;text-align:center;padding:40px 0;">
+        No builds yet. <a href="/builds/new" class="accent-link">Create your first one!</a>
+      </p>
     {% endfor %}
   </div>
 </div>
+
 {% endblock %}

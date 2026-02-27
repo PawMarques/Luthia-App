@@ -2,12 +2,20 @@
 {% from 'macros/instrument_templates.html' import template_card %}
 
 {% block content %}
-<div class="builds-wrap">
-<!--  
-  <div class="page-title-bar">
-    <div class="page-title">Instrument Templates</div> 
+
+{# ── Sticky toolbar: template count stat ── #}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+    <div class="toolbar-right">
+      <span class="toolbar-stat">
+        <strong>{{ templates | length }}</strong> template{{ 's' if templates | length != 1 else '' }}
+      </span>
+    </div>
   </div>
--->
+</div>
+
+{# ── Main content ── #}
+<div class="page-wrap">
   <div class="tpl-list">
     {% for t in templates %}
       {{ template_card(t) }}
@@ -16,4 +24,5 @@
     {% endfor %}
   </div>
 </div>
+
 {% endblock %}

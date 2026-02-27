@@ -2,8 +2,6 @@
 
 {% block title %}{{ page_title }}{% endblock %}
 
-{% block extra_css %}{% endblock %}
-
 {% block header_actions %}
 <div class="header-actions">
   <button class="btn-new-vendor" id="btn-add-vendor">+ Add Vendor</button>
@@ -11,18 +9,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="vendors-wrap">
 
-  <div class="vendors-header">
-    <!--<div class="page-title">Vendors</div>-->
-    <div class="page-title-sub">
-      <span class="sg-meta-item"><strong>{{ vendors | length }}</strong> vendor{{ 's' if vendors | length != 1 else '' }} ·
-      {% set active_count = vendors | selectattr('0.active') | list | length %}
-      <strong>{{ active_count }}</strong> active</span>
+{# ── Sticky toolbar: vendor count stat ── #}
+{% set active_count = vendors | selectattr('0.active') | list | length %}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+    <div class="toolbar-right">
+      <span class="toolbar-stat">
+        <strong>{{ vendors | length }}</strong> vendor{{ 's' if vendors | length != 1 else '' }} ·
+        <strong>{{ active_count }}</strong> active
+      </span>
     </div>
   </div>
+</div>
 
-  <!-- Vendor grid -->
+{# ── Main content ── #}
+<div class="page-wrap">
+
   <div class="vendor-grid" id="vendor-grid">
 
     {% for vendor, product_count in vendors %}
@@ -92,7 +95,7 @@
   </div>
 </div>
 
-<!-- ── Add/Edit modal ──────────────────────────────────────── -->
+{# ── Add/Edit modal ── #}
 <div class="vendor-modal-backdrop" id="vendor-modal">
   <div class="vendor-modal">
     <div class="vendor-modal-title" id="modal-title">Add Vendor</div>
@@ -130,7 +133,7 @@
   </div>
 </div>
 
-<!-- ── Toast notification ─────────────────────────────────── -->
+{# ── Toast notification ── #}
 <div class="toast" id="toast"></div>
 
 {% endblock %}
@@ -143,7 +146,6 @@
 
 let _editingId = null;
 
-// Open modal to ADD a new vendor
 function openAddModal() {
   _editingId = null;
   document.getElementById('modal-title').textContent = 'Add Vendor';
@@ -158,7 +160,6 @@ function openAddModal() {
   document.getElementById('modal-name').focus();
 }
 
-// Open modal to EDIT an existing vendor — populate from the DOM card
 function openEditModal(vendorId) {
   _editingId = vendorId;
   const card = document.getElementById(`vendor-card-${vendorId}`);
@@ -168,8 +169,6 @@ function openEditModal(vendorId) {
   document.getElementById('modal-save-btn').textContent = 'Save Changes';
   document.getElementById('modal-vendor-id').value = vendorId;
 
-  // Read current values from the card's data attributes (set below via JS refresh)
-  // Fetch fresh from API to be safe
   fetch(`/api/vendors`)
     .then(r => r.json())
     .then(vendors => {
@@ -190,15 +189,12 @@ function closeModal() {
   _editingId = null;
 }
 
-// Close modal on backdrop click
 document.getElementById('vendor-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-// Keyboard: Escape closes modal
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// Save (create or update)
 async function saveVendor() {
   const name     = document.getElementById('modal-name').value.trim();
   const country  = document.getElementById('modal-country').value.trim();
@@ -228,12 +224,9 @@ async function saveVendor() {
 
   closeModal();
   showToast(isNew ? 'Vendor added successfully.' : 'Vendor updated.');
-
-  // Refresh the page to re-render cards
   setTimeout(() => location.reload(), 600);
 }
 
-// Toggle active / inactive
 async function toggleActive(vendorId) {
   const res  = await fetch(`/api/vendors/${vendorId}`, { method: 'DELETE' });
   const data = await res.json();
@@ -243,10 +236,8 @@ async function toggleActive(vendorId) {
   setTimeout(() => location.reload(), 600);
 }
 
-// ── Wire up header button
 document.getElementById('btn-add-vendor').addEventListener('click', openAddModal);
 
-// ── Toast helper
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -255,7 +246,6 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('is-visible'), 3000);
 }
 
-// ── Allow Enter key in modal inputs to trigger save
 document.querySelectorAll('.vef-input, #modal-name, #modal-country, #modal-currency, #modal-website').forEach(el => {
   el.addEventListener('keydown', e => { if (e.key === 'Enter') saveVendor(); });
 });

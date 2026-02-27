@@ -2,18 +2,19 @@
 
 {% block title %}{{ page_title }}{% endblock %}
 
-{% block extra_css %}{% endblock %}
-
 {% block content %}
-<div class="fc-wrap">
 
-  <div class="page-title-bar">
-    <div>
-      <!--<div class="page-title">Fret Calculator</div>-->
-      <div class="page-title-sub">Compute precise fret positions using the equal-temperament formula</div>
+{# ── Sticky toolbar: calculator subtitle as stat ── #}
+<div class="page-toolbar">
+  <div class="toolbar-row">
+    <div class="toolbar-right">
+      <span class="toolbar-stat">Equal temperament fret position calculator</span>
     </div>
   </div>
+</div>
 
+{# ── Main content ── #}
+<div class="page-wrap page-wrap--narrow">
   <div class="fc-layout">
 
     <!-- ── Left: controls ──────────────────────────────────────── -->
@@ -101,7 +102,6 @@
       <div class="fc-diagram-wrap">
         <div class="fc-diagram-label">Fretboard diagram (proportional scale)</div>
         <svg id="fc-fretboard-svg" viewBox="0 0 900 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- Placeholder state -->
           <rect x="0" y="10" width="900" height="70" rx="4"
                 fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="6,4"/>
           <text x="450" y="50" text-anchor="middle" font-size="13"
@@ -143,6 +143,7 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -154,12 +155,11 @@
 const state = {
   scale_mm:  null,
   num_frets: 24,
-  unit:      'mm',    // 'mm' or 'in'
+  unit:      'mm',
   label:     '',
-  frets:     [],      // computed fret data from API
+  frets:     [],
 };
 
-// ── Preset selection ──────────────────────────────────────────
 function selectPreset(btn) {
   document.querySelectorAll('.fc-preset-btn').forEach(b => b.classList.remove('is-active'));
   btn.classList.add('is-active');
@@ -189,14 +189,12 @@ function updateScaleInfo() {
     `<strong>${state.scale_mm.toFixed(1)} mm</strong> &nbsp;·&nbsp; <strong>${inches}″</strong>`;
 }
 
-// ── Fret count ─────────────────────────────────────────────────
 function selectFrets(btn) {
   document.querySelectorAll('.fc-seg').forEach(b => b.classList.remove('is-active'));
   btn.classList.add('is-active');
   state.num_frets = parseInt(btn.dataset.frets);
 }
 
-// ── Unit toggle ────────────────────────────────────────────────
 function toggleUnit() {
   state.unit = state.unit === 'mm' ? 'in' : 'mm';
   const isIn = state.unit === 'in';
@@ -204,18 +202,15 @@ function toggleUnit() {
   document.getElementById('lbl-mm').classList.toggle('is-active', !isIn);
   document.getElementById('lbl-in').classList.toggle('is-active', isIn);
 
-  // Update table headers
   const label = isIn ? 'in' : 'mm';
   document.getElementById('th-from-nut').textContent   = `From nut (${label})`;
   document.getElementById('th-spacing').textContent    = `Spacing (${label})`;
   document.getElementById('th-from-nut-2').textContent = `From nut (${isIn ? 'mm' : 'in'})`;
   document.getElementById('th-spacing-2').textContent  = `Spacing (${isIn ? 'mm' : 'in'})`;
 
-  // Re-render table with new unit (data already loaded)
   if (state.frets.length) renderTable(state.frets);
 }
 
-// ── Calculate ──────────────────────────────────────────────────
 async function calculate() {
   if (!state.scale_mm) {
     shake(document.getElementById('fc-scale-input'));
@@ -235,16 +230,13 @@ async function calculate() {
   }
 
   state.frets = data.frets;
-
   renderDiagram(data.frets, state.scale_mm);
   renderTable(data.frets);
 
-  // Enable export buttons
   document.getElementById('fc-export-btn').disabled   = false;
   document.getElementById('fc-export-btn-2').disabled = false;
 }
 
-// ── Fretboard SVG diagram ──────────────────────────────────────
 function renderDiagram(frets, scale_mm) {
   const svg    = document.getElementById('fc-fretboard-svg');
   const W      = 900;
@@ -256,7 +248,6 @@ function renderDiagram(frets, scale_mm) {
   const botY   = H - 14;
   const midY   = H / 2;
 
-  // Wood-grain background colour respects current theme
   const isDark = document.documentElement.dataset.mode !== 'light';
   const boardFill  = isDark ? '#2a1f0e' : '#d4a96a';
   const fretColor  = isDark ? '#c8a96a' : '#8b6914';
@@ -264,26 +255,21 @@ function renderDiagram(frets, scale_mm) {
   const octaveClr  = 'var(--accent)';
   const textClr    = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
 
-  // String y positions (6 strings, evenly spaced)
   const strings = [topY + 6, topY + 14, topY + 22, botY - 22, botY - 14, botY - 6];
 
-  // Map fret distance from nut to SVG x position
   function toX(fromNut) {
     return nutX + (fromNut / scale_mm) * boardW;
   }
 
   let svgHtml = `
-  <!-- Fretboard body -->
   <rect x="${nutX}" y="${topY}" width="${boardW}" height="${botY - topY}"
         rx="3" fill="${boardFill}" opacity="${isDark ? 0.9 : 0.7}"/>`;
 
-  // Strings
   for (const sy of strings) {
     svgHtml += `<line x1="${nutX}" y1="${sy}" x2="${endX}" y2="${sy}"
       stroke="${stringClr}" stroke-width="1"/>`;
   }
 
-  // Fret lines
   for (const f of frets) {
     if (f.fret === 0) continue;
     const x       = toX(f.from_nut_mm);
@@ -291,25 +277,20 @@ function renderDiagram(frets, scale_mm) {
     const color   = isOct ? octaveClr : fretColor;
     const width   = isOct ? 2.5 : 1.5;
     const opacity = isOct ? 1 : 0.8;
-
     svgHtml += `<line x1="${x}" y1="${topY}" x2="${x}" y2="${botY}"
       stroke="${color}" stroke-width="${width}" opacity="${opacity}"/>`;
   }
 
-  // Nut (thick left edge)
   svgHtml += `<rect x="${nutX}" y="${topY}" width="4" height="${botY - topY}"
     fill="${fretColor}" rx="1"/>`;
 
-  // Fret number labels – only selected ones to avoid clutter
   const labelFrets = new Set([1, 3, 5, 7, 9, 12, 15, 17, 19, 21, 24]);
   for (const f of frets) {
     if (!labelFrets.has(f.fret)) continue;
     const xPrev = f.fret === 1 ? nutX : toX(frets[f.fret - 1].from_nut_mm);
     const xCurr = toX(f.from_nut_mm);
     const cx    = (xPrev + xCurr) / 2;
-
-    if (cx > endX - 6) continue;   // skip if outside bounds
-
+    if (cx > endX - 6) continue;
     const isOct = f.fret % 12 === 0;
     svgHtml += `<text x="${cx}" y="${midY + 4}" text-anchor="middle"
       font-size="${isOct ? 10 : 9}" font-family="'IBM Plex Sans', sans-serif"
@@ -317,7 +298,6 @@ function renderDiagram(frets, scale_mm) {
       fill="${isOct ? octaveClr : textClr}">${f.fret}</text>`;
   }
 
-  // Inlay dots (standard positions: 3, 5, 7, 9 single; 12 double)
   const inlayFrets   = [3, 5, 7, 9];
   const doubleFrets  = [12];
   const inlayColor   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
@@ -327,7 +307,6 @@ function renderDiagram(frets, scale_mm) {
     const xPrev = fn === 0 ? nutX : toX(frets[fn - 1].from_nut_mm);
     const xCurr = toX(frets[fn].from_nut_mm);
     const cx    = (xPrev + xCurr) / 2;
-
     if (doubleFrets.includes(fn)) {
       svgHtml += `<circle cx="${cx}" cy="${midY - 8}" r="3.5" fill="${inlayColor}"/>`;
       svgHtml += `<circle cx="${cx}" cy="${midY + 8}" r="3.5" fill="${inlayColor}"/>`;
@@ -339,7 +318,6 @@ function renderDiagram(frets, scale_mm) {
   svg.innerHTML = svgHtml;
 }
 
-// ── Data table ─────────────────────────────────────────────────
 function renderTable(frets) {
   const primary   = state.unit === 'mm' ? 'from_nut_mm' : 'from_nut_in';
   const secondary = state.unit === 'mm' ? 'from_nut_in' : 'from_nut_mm';
@@ -366,7 +344,6 @@ function renderTable(frets) {
   document.getElementById('fc-table').style.display       = '';
 }
 
-// ── Excel export ───────────────────────────────────────────────
 function exportXlsx() {
   if (!state.scale_mm) return;
   const params = new URLSearchParams({
@@ -377,7 +354,6 @@ function exportXlsx() {
   window.location.href = `/api/fret/export?${params}`;
 }
 
-// ── Shake animation for empty input ───────────────────────────
 function shake(el) {
   el.style.transition = 'none';
   el.style.borderColor = '#ef4444';
@@ -389,12 +365,10 @@ function shake(el) {
   }, 60);
 }
 
-// ── Keyboard shortcut: Enter to calculate ─────────────────────
 document.getElementById('fc-scale-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') calculate();
 });
 
-// ── Auto-select 34" bass on load (sensible default for a bass luthier) ──
 window.addEventListener('DOMContentLoaded', () => {
   const defaultBtn = document.querySelector('.fc-preset-btn[data-scale="863.6"]');
   if (defaultBtn) { selectPreset(defaultBtn); calculate(); }
