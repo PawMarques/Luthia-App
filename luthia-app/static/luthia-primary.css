@@ -621,7 +621,9 @@ tbody td {
 .pager {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  padding: 12px 0;
 }
 
 .page-num.active {
@@ -2003,32 +2005,6 @@ table.fc-table {
   white-space: nowrap;
 }
 
-.sg-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 0 16px;
-  }
-
-.sg-page-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.12s;
-}
-
-.sg-page-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
 
 .sg-loading,
 .sg-empty {
@@ -2221,10 +2197,6 @@ table.fc-table {
   padding: 40px 20px;
   font-size: 0.85rem;
   text-align: center;
-}
-
-.sg-page-ellipsis {
-  padding: 0 4px;
 }
 
 .badge-in-stock {
@@ -3083,9 +3055,7 @@ thead th.sorted.asc::after {
 
 /* ── RESULTS FOOTER ──────────────────────────────────────────── */
 /*
-   Bottom row of a content page: left side for count label,
-   right side for pagination. Replaces the standalone
-   .sg-pagination centred block.
+   Bottom row of a content page: contains pagination.
 */
 
 .results-footer {
@@ -3194,9 +3164,7 @@ thead th.sorted.asc::after {
 
 /* ── RESULTS FOOTER ──────────────────────────────────────────── */
 /*
-   Bottom row of a content page: left side for count label,
-   right side for pagination. Replaces the standalone
-   .sg-pagination centred block.
+   Bottom row of a content page: contains pagination.
 */
 
 .results-footer {
@@ -3323,9 +3291,7 @@ thead th.sorted.asc::after {
 
 /* ── RESULTS FOOTER ──────────────────────────────────────────── */
 /*
-   Bottom row of a content page: left side for count label,
-   right side for pagination. Replaces the standalone
-   .sg-pagination centred block.
+   Bottom row of a content page: contains pagination.
 */
 
 .results-footer {

@@ -1314,23 +1314,6 @@ tr.is-octave .fc-fret-num {
   color: var(--text-muted);
 }
 
-.sg-page-btn {
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-muted);
-}
-
-.sg-page-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.sg-page-btn.is-current {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
-
 .sg-loading,
 .sg-empty {
   color: var(--text-muted);
@@ -1422,10 +1405,6 @@ tr.is-octave .fc-fret-num {
 }
 
 .sg-drawer-loading {
-  color: var(--text-muted);
-}
-
-.sg-page-ellipsis {
   color: var(--text-muted);
 }
 

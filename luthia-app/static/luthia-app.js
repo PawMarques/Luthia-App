@@ -603,23 +603,26 @@ function renderRows(rows) {
   </tr>`).join('');
 }
 
-/* ===================== PAGER ===================== */
+/* ===================== SHARED PAGINATION ===================== */
 
-function renderPager(page, pages) {
-  const pagers = [document.getElementById('pager-top'), document.getElementById('pager')];
-  if (pages <= 1) { pagers.forEach(p => { if (p) p.innerHTML = ''; }); return; }
-  const toShow = new Set([1, pages]);
-  for (let p = Math.max(2,page-2); p <= Math.min(pages-1,page+2); p++) toShow.add(p);
-  const sorted = [...toShow].sort((a,b)=>a-b);
-  let html = `<button class="page-btn" onclick="goToPage(${page-1})" ${page===1?'disabled':''}>&larr; Prev</button>`;
+function renderPagination(containerId, page, pages, navFnName) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (pages <= 1) { el.innerHTML = ''; return; }
+
+  const pageSet = new Set([1, pages]);
+  for (let p = Math.max(2, page-2); p <= Math.min(pages-1, page+2); p++) pageSet.add(p);
+  const pageList = [...pageSet].sort((a, b) => a - b);
+
+  let html = `<button class="page-btn" onclick="${navFnName}(${page-1})" ${page===1?'disabled':''}>&larr; Prev</button>`;
   let prev = 0;
-  for (const p of sorted) {
-    if (p > prev+1) html += '<span class="page-ellipsis">&hellip;</span>';
-    html += `<button class="page-num${p===page?' active':''}" onclick="goToPage(${p})">${p}</button>`;
+  for (const p of pageList) {
+    if (p > prev + 1) html += '<span class="page-ellipsis">&hellip;</span>';
+    html += `<button class="page-num${p===page?' active':''}" onclick="${navFnName}(${p})">${p}</button>`;
     prev = p;
   }
-  html += `<button class="page-btn" onclick="goToPage(${page+1})" ${page===pages?'disabled':''}>Next &rarr;</button>`;
-  pagers.forEach(p => { if (p) p.innerHTML = html; });
+  html += `<button class="page-btn" onclick="${navFnName}(${page+1})" ${page===pages?'disabled':''}>Next &rarr;</button>`;
+  el.innerHTML = html;
 }
 
 function updateFormatDropdown(formats) {
@@ -654,7 +657,7 @@ function fetchAndRender() {
     .then(r => r.json())
     .then(data => {
       renderRows(data.rows);
-      renderPager(data.page, data.pages);
+      renderPagination('pager-bottom', data.page, data.pages, 'goToPage');
       const start = (data.page-1)*50+1, end = Math.min(data.page*50, data.total);
       document.getElementById('results-text').innerHTML =
         `Showing <strong>${start}&ndash;${end}</strong> of <strong>${data.total}</strong> products`;
@@ -667,4 +670,282 @@ function fetchAndRender() {
     });
 }
 
-fetchAndRender();
+if (document.getElementById('tbody')) fetchAndRender();
+
+/* ===================== SPECIES PAGE CONTROLLER ===================== */
+
+const sgState = {
+  q: '', filter: 'all', page: 1, loading: false, activeId: null,
+};
+let sgSearchTimer = null;
+
+function goPage(p) {
+  sgState.page = p;
+  loadGrid();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function loadGrid() {
+  if (sgState.loading) return;
+  sgState.loading = true;
+
+  const grid = document.getElementById('sg-grid');
+  grid.innerHTML = '<div class="sg-loading">Loading…</div>';
+  document.getElementById('sg-pagination').innerHTML = '';
+  document.getElementById('sg-count').textContent = '';
+
+  const params = new URLSearchParams({ page: sgState.page });
+  if (sgState.q) params.set('q', sgState.q);
+  if (sgState.filter === 'cites') params.set('cites', '1');
+  if (sgState.filter === 'available') params.set('available', '1');
+
+  const data = await fetch(`/api/species?${params}`).then(r => r.json());
+  sgState.loading = false;
+
+  document.getElementById('sg-count').textContent =
+    `${data.total} result${data.total !== 1 ? 's' : ''}`;
+
+  if (data.rows.length === 0) {
+    grid.innerHTML = `
+      <div class="sg-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        No species matched your search.
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = data.rows.map(renderCard).join('');
+
+  if (sgState.activeId) {
+    const el = document.getElementById(`sg-card-${sgState.activeId}`);
+    if (el) el.classList.add('is-active');
+  }
+
+  renderPagination('sg-pagination', data.page, data.pages, 'goPage');
+}
+
+function renderCard(s) {
+  const hasName = !!s.commercial_name;
+  const title = hasName ? esc(s.commercial_name) : `<em>${esc(s.scientific_name)}</em>`;
+  const subtitle = hasName ? esc(s.scientific_name) : '';
+
+  const countHtml = s.total_products > 0
+    ? `<span class="tpl-builds-count">${s.total_products} product${s.total_products !== 1 ? 's' : ''}</span>`
+    : '';
+
+  const actionsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      ${countHtml}
+      <button class="btn-sm" onclick="event.stopPropagation();openDrawer(${s.species_id})">Details</button>
+      <a class="btn-sm btn-sm--accent" href="/browse?species_id=${s.species_id}">Browse</a>
+    </div>`;
+
+  const priceLabel = s.min_price != null
+    ? (s.min_price === s.max_price
+        ? fmtPrice(s.min_price)
+        : fmtPrice(s.min_price) + ' – ' + fmtPrice(s.max_price))
+    : 'Not available';
+
+  const citesBadge = s.cites_listed
+    ? `<span class="tpl-construction-badge">CITES</span>`
+    : '';
+
+  const originRow = s.origin
+    ? `<div class="tpl-dim-row"><span>Origin</span><span>${esc(s.origin)}</span></div>`
+    : '';
+
+  let vendorRow;
+  if (s.total_products > 0) {
+    const pills = s.vendors.map(v =>
+      `<span class="sg-vendor-pill">${v.flag} ${esc(v.name)}</span>`
+    ).join('');
+    vendorRow = `<div class="tpl-dim-row">
+      <span>Vendors</span>
+      <span style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">${pills}</span>
+    </div>`;
+  } else {
+    vendorRow = `<div class="tpl-dim-row">
+      <span>Vendors</span>
+      <span class="sg-no-products">Not available from vendors</span>
+    </div>`;
+  }
+
+  return `
+<div class="tpl-card sg-card" id="sg-card-${s.species_id}">
+  <div class="tpl-card-header">
+    <div>
+      <div class="tpl-card-title">${title}</div>
+      ${subtitle ? `<div class="tpl-card-type">${subtitle}</div>` : ''}
+    </div>
+    ${actionsHtml}
+  </div>
+  <div class="tpl-variant">
+    <div class="tpl-variant-header">
+      <div>
+        <span class="tpl-variant-label sg-price-label">${priceLabel}</span>
+        ${citesBadge}
+      </div>
+    </div>
+    <div class="tpl-dims">
+      ${originRow}
+      ${vendorRow}
+    </div>
+  </div>
+</div>`;
+}
+
+function fmtPrice(p) {
+  return p != null ? p.toFixed(0) + ' SEK' : '';
+}
+
+async function openDrawer(speciesId) {
+  if (sgState.activeId) {
+    const prev = document.getElementById(`sg-card-${sgState.activeId}`);
+    if (prev) prev.classList.remove('is-active');
+  }
+  sgState.activeId = speciesId;
+
+  const card = document.getElementById(`sg-card-${speciesId}`);
+  if (card) card.classList.add('is-active');
+
+  const backdrop = document.getElementById('sg-drawer-backdrop');
+  backdrop.classList.add('is-open');
+  document.getElementById('drawer-commercial').textContent = '…';
+  document.getElementById('drawer-scientific').textContent = '';
+  document.getElementById('drawer-badges').innerHTML = '';
+  document.getElementById('sg-drawer-body').innerHTML = '<div class="sg-drawer-loading">Loading…</div>';
+
+  const data = await fetch(`/api/species/${speciesId}`).then(r => r.json());
+  renderDrawer(data);
+}
+
+function renderDrawer(d) {
+  document.getElementById('drawer-commercial').textContent =
+    d.commercial_name || d.scientific_name;
+  document.getElementById('drawer-scientific').textContent = d.scientific_name;
+
+  const badges = [];
+  if (d.cites_listed) badges.push(`<span class="badge-cites">CITES Listed</span>`);
+  if (d.total_products > 0) {
+    const inStk = d.in_stock_count > 0
+      ? `<span class="badge-in-stock">${d.in_stock_count} in stock</span>`
+      : `<span class="badge-out-stock">out of stock</span>`;
+    badges.push(inStk);
+  }
+  document.getElementById('drawer-badges').innerHTML = badges.join('');
+
+  let html = '';
+
+  html += `<div>
+    <div class="sg-section-title">Names</div>
+    <div class="sg-names-grid">`;
+
+  const nameRows = [
+    ['Commercial', d.commercial_name, d.alt_commercial_name],
+    ['English', d.english_name, d.alt_english_name],
+    ['Swedish', d.swedish_name, d.alt_swedish_name],
+    ['Portuguese', d.portuguese_name, d.alt_portuguese_name],
+  ];
+  for (const [lbl, primary, alt] of nameRows) {
+    const val = [primary, alt].filter(Boolean).join(' · ') || null;
+    html += `<div class="sg-name-row">
+      <span class="sg-name-lbl">${lbl}</span>
+      <span class="sg-name-val">${val ? esc(val) : '<em>—</em>'}</span>
+    </div>`;
+  }
+  if (d.origin) {
+    html += `<div class="sg-name-row">
+      <span class="sg-name-lbl">Origin</span>
+      <span class="sg-name-val">${esc(d.origin)}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  const vendorAliases = (d.aliases.vendor || []);
+  const otherAliases = Object.entries(d.aliases)
+    .filter(([lang]) => lang !== 'vendor')
+    .flatMap(([, names]) => names);
+
+  if (vendorAliases.length || otherAliases.length) {
+    html += `<div>
+      <div class="sg-section-title">Known names &amp; aliases</div>
+      <div class="sg-aliases">`;
+    for (const a of vendorAliases) {
+      html += `<span class="sg-alias-tag lang-vendor" title="Vendor name">${esc(a)}</span>`;
+    }
+    for (const a of otherAliases) {
+      html += `<span class="sg-alias-tag">${esc(a)}</span>`;
+    }
+    html += `</div></div>`;
+  }
+
+  if (d.total_products > 0) {
+    html += `<div><div class="sg-section-title">Available from vendors</div>`;
+    for (const [cat, products] of Object.entries(d.products_by_cat)) {
+      html += `<div class="sg-product-cat">
+        <div class="sg-product-cat-name">${esc(cat)}</div>`;
+      for (const p of products) {
+        const stockClass = p.in_stock ? 'in-stock' : 'out-stock';
+        const detail = [p.format, p.grade].filter(Boolean).join(' · ');
+        html += `<div class="sg-product-row">
+          <div class="sg-product-stock ${stockClass}" title="${p.in_stock ? 'In stock' : 'Out of stock'}"></div>
+          <div class="sg-product-vendor">${p.vendor_flag} ${esc(p.vendor)}</div>
+          ${detail ? `<div class="sg-product-format">${esc(detail)}</div>` : ''}
+          <div class="sg-product-price">${p.price.toFixed(2)} ${p.currency}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div>
+      <div class="sg-section-title">Availability</div>
+      <p class="sg-unavailable-note">
+        This species is not currently available from any vendor in the catalogue.
+      </p>
+    </div>`;
+  }
+
+  document.getElementById('sg-drawer-body').innerHTML = html;
+}
+
+function closeDrawer() {
+  document.getElementById('sg-drawer-backdrop').classList.remove('is-open');
+  if (sgState.activeId) {
+    const card = document.getElementById(`sg-card-${sgState.activeId}`);
+    if (card) card.classList.remove('is-active');
+    sgState.activeId = null;
+  }
+}
+
+// Wire events and boot — only on species page
+if (document.getElementById('sg-grid')) {
+  document.getElementById('sg-search').addEventListener('input', function() {
+    clearTimeout(sgSearchTimer);
+    sgSearchTimer = setTimeout(() => {
+      sgState.q = this.value.trim();
+      sgState.page = 1;
+      loadGrid();
+    }, 280);
+  });
+
+  document.querySelectorAll('.sg-filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.sg-filter-btn').forEach(b => b.classList.remove('is-active'));
+      this.classList.add('is-active');
+      sgState.filter = this.dataset.filter;
+      sgState.page = 1;
+      loadGrid();
+    });
+  });
+
+  document.getElementById('sg-drawer-close').addEventListener('click', closeDrawer);
+  document.getElementById('sg-drawer-backdrop').addEventListener('click', function(e) {
+    if (e.target === this) closeDrawer();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+  loadGrid();
+}

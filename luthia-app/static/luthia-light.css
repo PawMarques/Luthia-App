@@ -1341,23 +1341,6 @@
   color: var(--text-muted);
 }
 
-[data-mode="light"] .sg-page-btn {
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-muted);
-}
-
-[data-mode="light"] .sg-page-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-[data-mode="light"] .sg-page-btn.is-current {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
-
 [data-mode="light"] .sg-loading,
 [data-mode="light"] .sg-empty {
   color: var(--text-muted);
@@ -1449,10 +1432,6 @@
 }
 
 [data-mode="light"] .sg-drawer-loading {
-  color: var(--text-muted);
-}
-
-[data-mode="light"] .sg-page-ellipsis {
   color: var(--text-muted);
 }
 
