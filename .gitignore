@@ -5,7 +5,6 @@
 .env
 
 # Folders
-luthia-data/product-images/
 data-sources
 
 # Files
