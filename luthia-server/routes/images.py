@@ -1,9 +1,9 @@
 """Image management API endpoints.
 
 Provides:
-  POST   /api/products/<id>/images  — upload a file or add a URL-based image
-  DELETE /api/images/<id>           — delete an image and its backing file
-  PATCH  /api/images/<id>/caption   — update the caption text of an image
+  POST   /api/v1/products/<id>/images  — upload a file or add a URL-based image
+  DELETE /api/v1/images/<id>           — delete an image and its backing file
+  PATCH  /api/v1/images/<id>/caption   — update the caption text of an image
 """
 
 import os
@@ -26,7 +26,7 @@ def serve_upload(filename):
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
 
-@images_bp.route('/api/products/<int:product_id>/images', methods=['POST'])
+@images_bp.route('/api/v1/products/<int:product_id>/images', methods=['POST'])
 def api_image_upload(product_id):
     """Upload a file or save a URL as a product image."""
     # Verify the product exists before attaching images to it.
@@ -37,7 +37,7 @@ def api_image_upload(product_id):
     return _save_file_image(product_id)
 
 
-@images_bp.route('/api/images/<int:image_id>', methods=['DELETE'])
+@images_bp.route('/api/v1/images/<int:image_id>', methods=['DELETE'])
 def api_image_delete(image_id):
     """Delete a product image record and remove the backing file if it was uploaded."""
     img = ProductImage.query.get_or_404(image_id)
@@ -52,7 +52,7 @@ def api_image_delete(image_id):
     return jsonify({'ok': True})
 
 
-@images_bp.route('/api/images/<int:image_id>/caption', methods=['PATCH'])
+@images_bp.route('/api/v1/images/<int:image_id>/caption', methods=['PATCH'])
 def api_image_caption(image_id):
     """Update the caption text of an existing image."""
     img = ProductImage.query.get_or_404(image_id)

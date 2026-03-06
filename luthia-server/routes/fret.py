@@ -2,8 +2,8 @@
 
 Provides:
   GET  /fret                 — fret calculator page
-  GET  /api/fret/calculate   — compute fret positions (JSON)
-  GET  /api/fret/export      — download as .xlsx
+  GET  /api/v1/fret/calculate   — compute fret positions (JSON)
+  GET  /api/v1/fret/export      — download as .xlsx
 """
 
 import io
@@ -52,7 +52,7 @@ def fret_index():
 # Calculation API  (also used server-side for the export)
 # ---------------------------------------------------------------------------
 
-@fret_bp.route('/api/fret/calculate')
+@fret_bp.route('/api/v1/fret/calculate', endpoint='api_fret_calculate')
 def api_fret_calculate():
     """Return fret position data as JSON.
 
@@ -76,11 +76,11 @@ def api_fret_calculate():
 # Excel export
 # ---------------------------------------------------------------------------
 
-@fret_bp.route('/api/fret/export')
+@fret_bp.route('/api/v1/fret/export', endpoint='api_fret_export')
 def api_fret_export():
     """Generate and return a .xlsx fret table for download.
 
-    Query params: same as /api/fret/calculate, plus optional label (string).
+    Query params: same as /fret/calculate, plus optional label (string).
     """
     try:
         import openpyxl

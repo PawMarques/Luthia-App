@@ -2,8 +2,8 @@
 
 Provides:
   GET /species                 — species reference guide page
-  GET /api/species             — searchable, filterable species list (JSON)
-  GET /api/species/<id>        — full species detail with product availability (JSON)
+  GET /api/v1/species             — searchable, filterable species list (JSON)
+  GET /api/v1/species/<id>        — full species detail with product availability (JSON)
 """
 
 from flask import Blueprint, jsonify, render_template, request
@@ -45,7 +45,7 @@ def species_index():
 # API — list
 # ---------------------------------------------------------------------------
 
-@species_bp.route('/api/species')
+@species_bp.route('/api/v1/species')
 def api_species_list():
     """Return a filtered, searchable list of species as JSON.
 
@@ -125,7 +125,7 @@ def api_species_list():
 # API — detail
 # ---------------------------------------------------------------------------
 
-@species_bp.route('/api/species/<int:species_id>')
+@species_bp.route('/api/v1/species/<int:species_id>')
 def api_species_detail(species_id):
     """Return the full detail payload for a single species."""
     sp = Species.query.get_or_404(species_id)

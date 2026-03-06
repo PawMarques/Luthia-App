@@ -54,12 +54,12 @@ def test_compute_frets_returns_correct_entry_count():
 
 
 # ---------------------------------------------------------------------------
-# GET /api/fret/calculate
+# GET /api/v1/fret/calculate
 # ---------------------------------------------------------------------------
 
 def test_api_fret_calculate_valid_returns_200_and_ok(client):
     """A well-formed request must return HTTP 200 with ok=True in the payload."""
-    response = client.get('/api/fret/calculate?scale_mm=863.6&num_frets=24')
+    response = client.get('/api/v1/fret/calculate?scale_mm=863.6&num_frets=24')
     assert response.status_code == 200
     data = response.get_json()
     assert data['ok'] is True
@@ -70,7 +70,7 @@ def test_api_fret_calculate_returns_25_fret_entries(client):
 
     Fret 0 is the nut; the list always has num_frets + 1 items.
     """
-    data = client.get('/api/fret/calculate?scale_mm=863.6&num_frets=24').get_json()
+    data = client.get('/api/v1/fret/calculate?scale_mm=863.6&num_frets=24').get_json()
     assert len(data['frets']) == 25
     assert data['frets'][0]['fret'] == 0
     assert data['frets'][24]['fret'] == 24
@@ -78,35 +78,35 @@ def test_api_fret_calculate_returns_25_fret_entries(client):
 
 def test_api_fret_calculate_missing_scale_mm_returns_400(client):
     """Omitting the required scale_mm parameter must return 400 with ok=False."""
-    response = client.get('/api/fret/calculate?num_frets=24')
+    response = client.get('/api/v1/fret/calculate?num_frets=24')
     assert response.status_code == 400
     assert response.get_json()['ok'] is False
 
 
 def test_api_fret_calculate_negative_scale_mm_returns_400(client):
     """A negative scale_mm value is physically meaningless and must return 400."""
-    response = client.get('/api/fret/calculate?scale_mm=-100')
+    response = client.get('/api/v1/fret/calculate?scale_mm=-100')
     assert response.status_code == 400
     assert response.get_json()['ok'] is False
 
 
 def test_api_fret_calculate_num_frets_99_returns_400(client):
     """num_frets=99 exceeds the maximum of 36 and must be rejected with 400."""
-    response = client.get('/api/fret/calculate?scale_mm=863.6&num_frets=99')
+    response = client.get('/api/v1/fret/calculate?scale_mm=863.6&num_frets=99')
     assert response.status_code == 400
     assert response.get_json()['ok'] is False
 
 
 # ---------------------------------------------------------------------------
-# GET /api/fret/export
+# GET /api/v1/fret/export
 # ---------------------------------------------------------------------------
 
 def test_api_fret_export_returns_xlsx(client):
-    """GET /api/fret/export must return HTTP 200 with an xlsx MIME type.
+    """GET /api/v1/fret/export must return HTTP 200 with an xlsx MIME type.
 
     The response must carry the OpenXML spreadsheet content-type so that the
     browser triggers a download rather than attempting to render the bytes.
     """
-    response = client.get('/api/fret/export?scale_mm=863.6')
+    response = client.get('/api/v1/fret/export?scale_mm=863.6')
     assert response.status_code == 200
     assert 'spreadsheetml.sheet' in response.content_type

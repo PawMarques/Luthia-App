@@ -5,9 +5,9 @@ Provides:
   GET    /builds/new                          — new build creation form
   POST   /builds/new                          — create a build from a template variant
   GET    /builds/<id>                         — build detail and part selection view
-  GET    /api/builds/<id>/candidates/<role>   — candidate products for a part role
-  PATCH  /api/builds/<id>/parts/<part_id>     — assign a product to a part slot
-  DELETE /api/builds/<id>                     — delete a build and all its parts
+  GET    /api/v1/builds/<id>/candidates/<role>   — candidate products for a part role
+  PATCH  /api/v1/builds/<id>/parts/<part_id>     — assign a product to a part slot
+  DELETE /api/v1/builds/<id>                     — delete a build and all its parts
 """
 
 from datetime import datetime, timezone
@@ -139,7 +139,7 @@ def builds_detail(build_id):
 # Build API
 # ---------------------------------------------------------------------------
 
-@builds_bp.route('/api/builds/<int:build_id>/candidates/<role>')
+@builds_bp.route('/api/v1/builds/<int:build_id>/candidates/<role>', endpoint='api_build_candidates')
 def api_build_candidates(build_id, role):
     """Return candidate products (JSON) suitable for a given part role in a build."""
     build      = Build.query.get_or_404(build_id)
@@ -168,7 +168,7 @@ def api_build_candidates(build_id, role):
     return jsonify(rows)
 
 
-@builds_bp.route('/api/builds/<int:build_id>/parts/<int:part_id>', methods=['PATCH'])
+@builds_bp.route('/api/v1/builds/<int:build_id>/parts/<int:part_id>', methods=['PATCH'], endpoint='api_build_part_update')
 def api_build_part_update(build_id, part_id):
     """Assign a product to a build part slot and recompute all derived values."""
     build = Build.query.get_or_404(build_id)
@@ -193,7 +193,7 @@ def api_build_part_update(build_id, part_id):
     return jsonify({'ok': True, 'total': build.total_price})
 
 
-@builds_bp.route('/api/builds/<int:build_id>', methods=['DELETE'])
+@builds_bp.route('/api/v1/builds/<int:build_id>', methods=['DELETE'], endpoint='api_build_delete')
 def api_build_delete(build_id):
     """Delete a build; BuildPart records are cascade-deleted by the ORM."""
     build = Build.query.get_or_404(build_id)

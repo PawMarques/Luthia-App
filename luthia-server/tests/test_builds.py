@@ -105,13 +105,13 @@ def test_builds_detail_404_for_unknown_id(client, db_session):
 # ---------------------------------------------------------------------------
 
 def test_api_candidates_body_returns_json_array(client, seed_db):
-    """GET /api/builds/<id>/candidates/body must return a JSON array.
+    """GET /api/v1/builds/<id>/candidates/body must return a JSON array.
 
     The picker modal populates itself from this endpoint; a non-array or empty
     response would leave the user unable to select a body blank.
     """
     build_id = seed_db['build'].build_id
-    response = client.get(f'/api/builds/{build_id}/candidates/body')
+    response = client.get(f'/api/v1/builds/{build_id}/candidates/body')
 
     assert response.status_code == 200
     data = response.get_json()
@@ -125,7 +125,7 @@ def test_api_candidates_body_contains_seeded_products(client, seed_db):
     (480 × 350 × 45 mm), so neither should be filtered out.
     """
     build_id = seed_db['build'].build_id
-    data     = client.get(f'/api/builds/{build_id}/candidates/body').get_json()
+    data     = client.get(f'/api/v1/builds/{build_id}/candidates/body').get_json()
 
     assert len(data) == 2
     ids = {row['id'] for row in data}
@@ -140,7 +140,7 @@ def test_api_candidates_unknown_role_returns_empty_array(client, seed_db):
     so the picker can handle unknown roles gracefully.
     """
     build_id = seed_db['build'].build_id
-    data     = client.get(f'/api/builds/{build_id}/candidates/unknown_role').get_json()
+    data     = client.get(f'/api/v1/builds/{build_id}/candidates/unknown_role').get_json()
 
     assert isinstance(data, list)
     assert data == []
@@ -151,7 +151,7 @@ def test_api_candidates_unknown_role_returns_empty_array(client, seed_db):
 # ---------------------------------------------------------------------------
 
 def test_api_build_part_update_assigns_product(client, seed_db):
-    """PATCH /api/builds/<id>/parts/<part_id> must assign a product and return {ok: true}.
+    """PATCH /api/v1/builds/<id>/parts/<part_id> must assign a product and return {ok: true}.
 
     The picker sends this request when the user picks a product; a failure here
     means the selection is never persisted to the database.
@@ -161,7 +161,7 @@ def test_api_build_part_update_assigns_product(client, seed_db):
     product = seed_db['products'][0]
 
     response = client.patch(
-        f'/api/builds/{build.build_id}/parts/{part.part_id}',
+        f'/api/v1/builds/{build.build_id}/parts/{part.part_id}',
         data=json.dumps({'product_id': product.product_id}),
         content_type='application/json',
     )
@@ -179,14 +179,14 @@ def test_api_build_part_update_assigns_product(client, seed_db):
 # ---------------------------------------------------------------------------
 
 def test_api_build_delete_removes_build(client, seed_db):
-    """DELETE /api/builds/<id> must delete the build row and return {ok: true}.
+    """DELETE /api/v1/builds/<id> must delete the build row and return {ok: true}.
 
     After deletion the build should not be retrievable; a subsequent GET must
     return 404 to confirm the record is gone from the database.
     """
     build_id = seed_db['build'].build_id
 
-    response = client.delete(f'/api/builds/{build_id}')
+    response = client.delete(f'/api/v1/builds/{build_id}')
 
     assert response.status_code == 200
     assert response.get_json()['ok'] is True
@@ -197,6 +197,6 @@ def test_api_build_delete_removes_build(client, seed_db):
 
 
 def test_api_build_delete_404_for_unknown_build(client, db_session):
-    """DELETE /api/builds/<unknown_id> must return 404, not a 500."""
-    response = client.delete('/api/builds/99999')
+    """DELETE /api/v1/builds/<unknown_id> must return 404, not a 500."""
+    response = client.delete('/api/v1/builds/99999')
     assert response.status_code == 404

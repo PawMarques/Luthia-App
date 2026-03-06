@@ -2,9 +2,9 @@
 
 Provides:
   GET /browse               — product browsing page (populates filter dropdowns)
-  GET /api/products         — paginated, filterable, sortable product list (JSON)
-  GET /api/products/<id>    — full product detail including species names (JSON)
-  PUT /api/products/<id>    — update editable product fields (JSON)
+  GET /api/v1/products         — paginated, filterable, sortable product list (JSON)
+  GET /api/v1/products/<id>    — full product detail including species names (JSON)
+  PUT /api/v1/products/<id>    — update editable product fields (JSON)
 """
 
 from datetime import datetime, timezone
@@ -80,7 +80,7 @@ def browse():
 # Products list API
 # ---------------------------------------------------------------------------
 
-@browse_bp.route('/api/products')
+@browse_bp.route('/api/v1/products')
 def api_products():
     """Return a paginated, filtered and sorted list of products as JSON.
 
@@ -200,7 +200,7 @@ def _product_row(p) -> dict:
 # Product detail API
 # ---------------------------------------------------------------------------
 
-@browse_bp.route('/api/products/<int:product_id>')
+@browse_bp.route('/api/v1/products/<int:product_id>')
 def api_product_detail(product_id):
     """Return the full detail payload for a single product."""
     p  = Product.query.get_or_404(product_id)
@@ -260,7 +260,7 @@ def api_product_detail(product_id):
 # Product edit API
 # ---------------------------------------------------------------------------
 
-@browse_bp.route('/api/products/<int:product_id>', methods=['PUT'])
+@browse_bp.route('/api/v1/products/<int:product_id>', methods=['PUT'])
 def api_product_edit(product_id):
     """Save inline edits to a product.  Returns {ok, errors} JSON."""
     p    = Product.query.get_or_404(product_id)

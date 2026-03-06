@@ -2,10 +2,10 @@
 
 Provides:
   GET    /vendors                  — vendor list page
-  GET    /api/vendors              — all vendors as JSON
-  POST   /api/vendors              — create a new vendor
-  PATCH  /api/vendors/<id>         — update vendor fields
-  DELETE /api/vendors/<id>         — deactivate (soft-delete) a vendor
+  GET    /api/v1/vendors           — all vendors as JSON
+  POST   /api/v1/vendors           — create a new vendor
+  PATCH  /api/v1/vendors/<id>      — update vendor fields
+  DELETE /api/v1/vendors/<id>      — deactivate (soft-delete) a vendor
 """
 
 from flask import Blueprint, jsonify, render_template, request
@@ -45,7 +45,7 @@ def vendors_index():
 # API — list
 # ---------------------------------------------------------------------------
 
-@vendors_bp.route('/api/vendors')
+@vendors_bp.route('/api/v1/vendors', endpoint='api_vendors')
 def api_vendors():
     """Return all vendors with product counts as JSON."""
     rows = (
@@ -62,7 +62,7 @@ def api_vendors():
 # API — create
 # ---------------------------------------------------------------------------
 
-@vendors_bp.route('/api/vendors', methods=['POST'])
+@vendors_bp.route('/api/v1/vendors', methods=['POST'], endpoint='api_vendor_create')
 def api_vendor_create():
     """Create a new vendor record.
 
@@ -89,7 +89,7 @@ def api_vendor_create():
 # API — update
 # ---------------------------------------------------------------------------
 
-@vendors_bp.route('/api/vendors/<int:vendor_id>', methods=['PATCH'])
+@vendors_bp.route('/api/v1/vendors/<int:vendor_id>', methods=['PATCH'], endpoint='api_vendor_update')
 def api_vendor_update(vendor_id):
     """Update editable vendor fields.
 
@@ -122,7 +122,7 @@ def api_vendor_update(vendor_id):
 # API — deactivate / reactivate
 # ---------------------------------------------------------------------------
 
-@vendors_bp.route('/api/vendors/<int:vendor_id>', methods=['DELETE'])
+@vendors_bp.route('/api/v1/vendors/<int:vendor_id>', methods=['DELETE'], endpoint='api_vendor_toggle')
 def api_vendor_toggle(vendor_id):
     """Toggle the vendor's active flag (soft delete / restore)."""
     vendor = Vendor.query.get_or_404(vendor_id)

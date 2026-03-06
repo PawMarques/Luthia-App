@@ -151,7 +151,7 @@ function toggleDetail(productId, sourceRow) {
 
   setTimeout(() => detailTr.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
 
-  fetch('/api/products/' + productId)
+  fetch('/api/v1/products/' + productId)
     .then(r => r.json())
     .then(d => {
       const el = document.getElementById('detail-inner-' + productId);
@@ -372,7 +372,7 @@ function buildImagesHtml(images, productId, editMode) {
 }
 
 function refreshImageSection(productId, editMode) {
-  fetch('/api/products/' + productId)
+  fetch('/api/v1/products/' + productId)
     .then(r => r.json())
     .then(d => {
       const gridId  = editMode ? 'edit-grid-' : 'view-grid-';
@@ -410,7 +410,7 @@ function addImageUrl(productId) {
   const url = (input.value || '').trim();
   if (!url) return;
   setImgError(productId, '');
-  fetch('/api/products/' + productId + '/images', {
+  fetch('/api/v1/products/' + productId + '/images', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ url }),
@@ -428,7 +428,7 @@ function uploadImage(productId, formData) {
   setImgError(productId, '');
   const area = document.getElementById('img-upload-area-' + productId);
   if (area) area.classList.add('uploading');
-  fetch('/api/products/' + productId + '/images', { method: 'POST', body: formData })
+  fetch('/api/v1/products/' + productId + '/images', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
       if (area) area.classList.remove('uploading');
@@ -443,7 +443,7 @@ function uploadImage(productId, formData) {
 
 function deleteImage(imageId, productId) {
   if (!confirm('Remove this image?')) return;
-  fetch('/api/images/' + imageId, { method: 'DELETE' })
+  fetch('/api/v1/images/' + imageId, { method: 'DELETE' })
     .then(r => r.json())
     .then(data => {
       if (!data.ok) return;
@@ -495,7 +495,7 @@ function enterEditMode(productId) {
   // Populate the images column in the edit grid
   const editImgCol = document.querySelector(`#edit-grid-${productId} .detail-col-images`);
   if (editImgCol) {
-    fetch('/api/products/' + productId)
+    fetch('/api/v1/products/' + productId)
       .then(r => r.json())
       .then(d => {
         const inner = document.createElement('div');
@@ -543,7 +543,7 @@ function saveEdit(productId) {
     product_url:  document.getElementById('edit-url').value,
   };
 
-  fetch('/api/products/' + productId, {
+  fetch('/api/v1/products/' + productId, {
     method:  'PUT',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(payload),
@@ -559,7 +559,7 @@ function saveEdit(productId) {
     // Reload the detail panel with fresh data and exit edit mode
     const inner = document.getElementById('detail-inner-' + productId);
     if (inner) inner.innerHTML = skeletonHtml();
-    fetch('/api/products/' + productId)
+    fetch('/api/v1/products/' + productId)
       .then(r => r.json())
       .then(d => {
         if (inner) inner.innerHTML = buildDetailHtml(d);
@@ -653,7 +653,7 @@ function fetchAndRender() {
   params.set('sort', state.sort);
   params.set('order', state.order);
   params.set('page', state.page);
-  fetch('/api/products?' + params)
+  fetch('/api/v1/products?' + params)
     .then(r => r.json())
     .then(data => {
       renderRows(data.rows);
@@ -699,7 +699,7 @@ async function loadGrid() {
   if (sgState.filter === 'cites') params.set('cites', '1');
   if (sgState.filter === 'available') params.set('available', '1');
 
-  const data = await fetch(`/api/species?${params}`).then(r => r.json());
+  const data = await fetch(`/api/v1/species?${params}`).then(r => r.json());
   sgState.loading = false;
 
   document.getElementById('sg-count').textContent =
@@ -817,7 +817,7 @@ async function openDrawer(speciesId) {
   document.getElementById('drawer-badges').innerHTML = '';
   document.getElementById('sg-drawer-body').innerHTML = '<div class="sg-drawer-loading">Loading…</div>';
 
-  const data = await fetch(`/api/species/${speciesId}`).then(r => r.json());
+  const data = await fetch(`/api/v1/species/${speciesId}`).then(r => r.json());
   renderDrawer(data);
 }
 
