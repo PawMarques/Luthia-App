@@ -6,6 +6,7 @@
 
 # Folders
 luthia-data/product-images/
+data-sources
 
 # Files
 generate_file_list.py
