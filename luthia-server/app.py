@@ -12,6 +12,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, url_for
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -50,6 +51,10 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     db.init_app(app)
+
+    # Configure CORS for development only (production will be same-domain)
+    if app.config.get('ENV') == 'development' or app.debug:
+        CORS(app, origins=['http://localhost:5173'])
 
     # Jinja2 template filter: convert a country name to its flag emoji.
     @app.template_filter('vendor_flag')

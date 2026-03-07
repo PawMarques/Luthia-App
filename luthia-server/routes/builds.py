@@ -143,7 +143,7 @@ def builds_detail(build_id):
 def api_build_candidates(build_id, role):
     """Return candidate products (JSON) suitable for a given part role in a build."""
     if role not in ROLE_CATEGORIES:
-        return api_error(f'Invalid role "{role}". Must be one of: {", ".join(ROLE_CATEGORIES)}.')
+        return jsonify([])
     build      = Build.query.get_or_404(build_id)
     candidates = _candidate_products(role, build.variant)
 

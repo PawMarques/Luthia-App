@@ -5,7 +5,8 @@
 .env
 
 # Folders
-data-sources
+data-sources/
+luthia-data/product-images/
 
 # Files
 generate_file_list.py

@@ -8,6 +8,8 @@ Provides:
   DELETE /api/v1/vendors/<id>      — deactivate (soft-delete) a vendor
 """
 
+from __future__ import annotations
+
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import func
 
@@ -75,7 +77,7 @@ def api_vendor_create():
 
     conflict = _vendor_name_conflict(data['name'].strip())
     if conflict:
-        return api_error(conflict, 409)
+        return api_error(conflict, 400)
 
     vendor = Vendor(
         name=data['name'].strip(),
