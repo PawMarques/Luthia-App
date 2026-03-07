@@ -56,7 +56,7 @@ def api_image_delete(image_id):
 def api_image_caption(image_id):
     """Update the caption text of an existing image."""
     img = ProductImage.query.get_or_404(image_id)
-    data = request.get_json(force=True)
+    data = request.get_json(force=True) or {}
     img.caption = (data.get('caption') or '').strip()
     db.session.commit()
     return jsonify({'ok': True, 'image': fmt_image(img)})

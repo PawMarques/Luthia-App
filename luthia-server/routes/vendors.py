@@ -11,7 +11,7 @@ Provides:
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import func
 
-from helpers import VENDOR_FLAGS
+from helpers import VENDOR_FLAGS, api_error
 from models import Product, Vendor, db
 
 vendors_bp = Blueprint('vendors', __name__)
@@ -69,9 +69,13 @@ def api_vendor_create():
     Expects JSON: {name, country?, currency?, website?}
     """
     data = request.get_json(force=True) or {}
-    errors = _validate_vendor_data(data, is_new=True)
+    errors = _validate_vendor_fields(data, is_new=True)
     if errors:
-        return jsonify({'ok': False, 'errors': errors}), 400
+        return api_error(errors)
+
+    conflict = _vendor_name_conflict(data['name'].strip())
+    if conflict:
+        return api_error(conflict, 409)
 
     vendor = Vendor(
         name=data['name'].strip(),
@@ -97,9 +101,14 @@ def api_vendor_update(vendor_id):
     """
     vendor = Vendor.query.get_or_404(vendor_id)
     data   = request.get_json(force=True) or {}
-    errors = _validate_vendor_data(data, is_new=False, current_vendor=vendor)
+    errors = _validate_vendor_fields(data, is_new=False)
     if errors:
-        return jsonify({'ok': False, 'errors': errors}), 400
+        return api_error(errors)
+
+    if 'name' in data:
+        conflict = _vendor_name_conflict(data['name'].strip(), exclude_id=vendor_id)
+        if conflict:
+            return api_error(conflict, 409)
 
     if 'name' in data:
         vendor.name = data['name'].strip()
@@ -151,21 +160,13 @@ def _vendor_dict(vendor, product_count: int) -> dict:
     }
 
 
-def _validate_vendor_data(data: dict, *, is_new: bool, current_vendor=None) -> list[str]:
-    """Return a list of validation error messages (empty = valid)."""
+def _validate_vendor_fields(data: dict, *, is_new: bool) -> list[str]:
+    """Return field-level validation errors (missing/malformed values) → 400."""
     errors = []
 
     if is_new or 'name' in data:
-        name = (data.get('name') or '').strip()
-        if not name:
+        if not (data.get('name') or '').strip():
             errors.append('Vendor name is required.')
-        else:
-            # Check for duplicates, excluding the vendor being updated.
-            q = Vendor.query.filter(func.lower(Vendor.name) == name.lower())
-            if current_vendor:
-                q = q.filter(Vendor.vendor_id != current_vendor.vendor_id)
-            if q.first():
-                errors.append(f'A vendor named "{name}" already exists.')
 
     if 'currency' in data:
         cur = (data.get('currency') or '').strip()
@@ -173,3 +174,11 @@ def _validate_vendor_data(data: dict, *, is_new: bool, current_vendor=None) -> l
             errors.append('Currency must be a 3-letter code (e.g. EUR, SEK, GBP).')
 
     return errors
+
+
+def _vendor_name_conflict(name: str, exclude_id: int | None = None) -> str | None:
+    """Return an error string if a vendor with *name* already exists, else None → 409."""
+    q = Vendor.query.filter(func.lower(Vendor.name) == name.lower())
+    if exclude_id is not None:
+        q = q.filter(Vendor.vendor_id != exclude_id)
+    return f'A vendor named "{name}" already exists.' if q.first() else None

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
-from helpers import ROLE_CATEGORIES, THICKNESS_WARN_LIMIT, VENDOR_FLAGS
+from helpers import ROLE_CATEGORIES, THICKNESS_WARN_LIMIT, VENDOR_FLAGS, api_error
 from models import (
     Build, BuildPart, Category, InstrumentTemplate,
     Product, TemplateVariant, db,
@@ -142,6 +142,8 @@ def builds_detail(build_id):
 @builds_bp.route('/api/v1/builds/<int:build_id>/candidates/<role>', endpoint='api_build_candidates')
 def api_build_candidates(build_id, role):
     """Return candidate products (JSON) suitable for a given part role in a build."""
+    if role not in ROLE_CATEGORIES:
+        return api_error(f'Invalid role "{role}". Must be one of: {", ".join(ROLE_CATEGORIES)}.')
     build      = Build.query.get_or_404(build_id)
     candidates = _candidate_products(role, build.variant)
 
@@ -174,7 +176,7 @@ def api_build_part_update(build_id, part_id):
     build = Build.query.get_or_404(build_id)
     part  = BuildPart.query.filter_by(part_id=part_id, build_id=build_id).first_or_404()
 
-    data       = request.get_json()
+    data       = request.get_json(force=True) or {}
     product_id = data.get('product_id')
     part.product_id = product_id
 

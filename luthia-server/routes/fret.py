@@ -11,6 +11,8 @@ import math
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 
+from helpers import api_error
+
 fret_bp = Blueprint('fret', __name__)
 
 # ---------------------------------------------------------------------------
@@ -64,9 +66,9 @@ def api_fret_calculate():
     num_frets = request.args.get('num_frets', 24, type=int)
 
     if not scale_mm or scale_mm <= 0:
-        return jsonify({'ok': False, 'error': 'scale_mm must be a positive number.'}), 400
+        return api_error('scale_mm must be a positive number.')
     if not (1 <= num_frets <= 36):
-        return jsonify({'ok': False, 'error': 'num_frets must be between 1 and 36.'}), 400
+        return api_error('num_frets must be between 1 and 36.')
 
     frets = _compute_frets(scale_mm, num_frets)
     return jsonify({'ok': True, 'scale_mm': scale_mm, 'num_frets': num_frets, 'frets': frets})
@@ -86,14 +88,17 @@ def api_fret_export():
         import openpyxl
         from openpyxl.styles import Alignment, Font, PatternFill
     except ImportError:
-        return 'openpyxl is not installed.', 500
+        return api_error('openpyxl is not installed.', 500)
 
     scale_mm  = request.args.get('scale_mm',  type=float)
     num_frets = request.args.get('num_frets', 24, type=int)
-    label     = request.args.get('label', '').strip() or f'{scale_mm:.1f}mm'
 
     if not scale_mm or scale_mm <= 0:
-        return 'Invalid scale_mm', 400
+        return api_error('scale_mm must be a positive number.')
+    if not (1 <= num_frets <= 36):
+        return api_error('num_frets must be between 1 and 36.')
+
+    label = request.args.get('label', '').strip() or f'{scale_mm:.1f}mm'
 
     frets = _compute_frets(scale_mm, num_frets)
 

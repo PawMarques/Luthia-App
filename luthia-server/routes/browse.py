@@ -15,6 +15,7 @@ from sqlalchemy import func
 from helpers import (
     CATEGORY_CLASSES,
     VENDOR_FLAGS,
+    api_error,
     fmt_dims,
     fmt_image,
     get_or_create,
@@ -264,7 +265,7 @@ def api_product_detail(product_id):
 def api_product_edit(product_id):
     """Save inline edits to a product.  Returns {ok, errors} JSON."""
     p    = Product.query.get_or_404(product_id)
-    data = request.get_json(force=True)
+    data = request.get_json(force=True) or {}
     errors = []
 
     if 'price' in data:
@@ -303,7 +304,7 @@ def api_product_edit(product_id):
         p.grade_id = get_or_create(Grade, name=name).grade_id if name else None
 
     if errors:
-        return jsonify({'ok': False, 'errors': errors}), 400
+        return api_error(errors)
 
     p.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
