@@ -59,7 +59,7 @@ def api_image_caption(image_id):
     data = request.get_json(force=True)
     img.caption = (data.get('caption') or '').strip()
     db.session.commit()
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'image': fmt_image(img)})
 
 
 # ---------------------------------------------------------------------------

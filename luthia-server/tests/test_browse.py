@@ -190,3 +190,81 @@ def test_api_product_edit_invalid_dimension_returns_400(client, seed_db):
 
     assert res.status_code == 400
     assert res.get_json()['ok'] is False
+
+
+def test_api_product_edit_returns_updated_product_object(client, seed_db):
+    """PUT response must include the updated product object with all edited fields.
+
+    The frontend uses the response to immediately update the detail panel without
+    needing a separate GET request; all changed fields must be reflected in the
+    returned product data.
+    """
+    p   = seed_db['products'][0]
+    res = client.put(
+        f'/api/v1/products/{p.product_id}',
+        data=json.dumps({
+            'price': 799.99,
+            'in_stock': False,
+            'thickness_mm': 30.5,
+            'format': 'Quartersawn',
+            'grade': 'Select',
+        }),
+        content_type='application/json',
+    )
+
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body['ok'] is True
+    assert 'product' in body
+
+    product = body['product']
+    assert product['product_id'] == p.product_id
+    assert product['price'] == 799.99
+    assert product['in_stock'] is False
+    assert product['thickness_mm'] == 30.5
+    assert product['format'] == 'Quartersawn'
+    assert product['grade'] == 'Select'
+    assert 'last_updated' in product
+    assert product['last_updated'] != ''
+
+
+def test_api_product_edit_returns_empty_strings_for_null_fields(client, seed_db):
+    """Null format/grade/url fields must return empty strings, not null values.
+
+    The frontend displays these as read-only text; null would render as 'None'
+    or cause rendering errors.
+    """
+    p   = seed_db['products'][0]
+    res = client.put(
+        f'/api/v1/products/{p.product_id}',
+        data=json.dumps({'format': '', 'grade': '', 'product_url': ''}),
+        content_type='application/json',
+    )
+
+    assert res.status_code == 200
+    product = res.get_json()['product']
+    assert product['format'] == ''
+    assert product['grade'] == ''
+    assert product['product_url'] == ''
+
+
+def test_api_product_edit_preserves_unedited_fields(client, seed_db):
+    """Editing only price must preserve other fields unchanged.
+
+    When the user edits only one field, the response should show all fields
+    with unedited ones retaining their original values.
+    """
+    p   = seed_db['products'][0]
+    original_in_stock = p.in_stock
+    original_url = p.product_url
+
+    res = client.put(
+        f'/api/v1/products/{p.product_id}',
+        data=json.dumps({'price': 500.0}),
+        content_type='application/json',
+    )
+
+    product = res.get_json()['product']
+    assert product['price'] == 500.0
+    assert product['in_stock'] == original_in_stock
+    assert product['product_url'] == (original_url or '')

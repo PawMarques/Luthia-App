@@ -194,6 +194,69 @@ def test_patch_caption_strips_whitespace(client, seed_db):
     assert img.caption == 'Trimmed'
 
 
+def test_patch_caption_returns_updated_image_object(client, seed_db):
+    """PATCH /api/v1/images/<id>/caption response must include the updated image object.
+
+    The frontend uses the response to confirm the caption was saved and to update
+    the image panel without needing a separate GET request.
+    """
+    product_id = seed_db['products'][0].product_id
+    img = ProductImage(
+        product_id=product_id,
+        source_type='url',
+        url='https://example.com/photo.jpg',
+        caption='Original caption',
+        sort_order=1,
+    )
+    db.session.add(img)
+    db.session.commit()
+
+    response = client.patch(
+        f'/api/v1/images/{img.image_id}/caption',
+        data=json.dumps({'caption': 'Updated caption text'}),
+        content_type='application/json',
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['ok'] is True
+    assert 'image' in body
+
+    image = body['image']
+    assert image['image_id'] == img.image_id
+    assert image['caption'] == 'Updated caption text'
+    assert image['source_type'] == 'url'
+    assert image['src'] == 'https://example.com/photo.jpg'
+    assert 'sort_order' in image
+
+
+def test_patch_caption_clears_caption_returns_empty(client, seed_db):
+    """PATCH with empty caption should return an image with empty caption string.
+
+    Clearing the caption is a valid operation; the response must reflect the
+    empty string value, not null.
+    """
+    product_id = seed_db['products'][0].product_id
+    img = ProductImage(
+        product_id=product_id,
+        source_type='url',
+        url='https://example.com/x.jpg',
+        caption='Has caption',
+        sort_order=1,
+    )
+    db.session.add(img)
+    db.session.commit()
+
+    response = client.patch(
+        f'/api/v1/images/{img.image_id}/caption',
+        data=json.dumps({'caption': ''}),
+        content_type='application/json',
+    )
+
+    image = response.get_json()['image']
+    assert image['caption'] == ''
+
+
 # ---------------------------------------------------------------------------
 # Image deletion (DELETE)
 # ---------------------------------------------------------------------------

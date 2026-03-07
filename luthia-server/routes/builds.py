@@ -190,7 +190,15 @@ def api_build_part_update(build_id, part_id):
     build.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
 
-    return jsonify({'ok': True, 'total': build.total_price})
+    # Return updated part with all state flags
+    part_data = {
+        'part_id': part.part_id,
+        'role': part.role,
+        'product_id': part.product_id,
+        'dims_unverified': part.dims_unverified,
+        'thickness_warning': part.thickness_warning,
+    }
+    return jsonify({'ok': True, 'part': part_data, 'total': build.total_price})
 
 
 @builds_bp.route('/api/v1/builds/<int:build_id>', methods=['DELETE'], endpoint='api_build_delete')

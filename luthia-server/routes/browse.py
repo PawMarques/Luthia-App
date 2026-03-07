@@ -307,6 +307,21 @@ def api_product_edit(product_id):
 
     p.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
-    return jsonify({'ok': True})
+
+    # Return updated product data
+    updated_product = {
+        'product_id': p.product_id,
+        'price': round(p.price, 2),
+        'in_stock': p.in_stock,
+        'thickness_mm': p.thickness_mm,
+        'width_mm': p.width_mm,
+        'length_mm': p.length_mm,
+        'weight_kg': p.weight_kg,
+        'product_url': p.product_url or '',
+        'format': p.format.name if p.format else '',
+        'grade': p.grade.name if p.grade else '',
+        'last_updated': p.last_updated.isoformat() if p.last_updated else '',
+    }
+    return jsonify({'ok': True, 'product': updated_product})
 
 

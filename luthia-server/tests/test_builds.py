@@ -174,6 +174,86 @@ def test_api_build_part_update_assigns_product(client, seed_db):
     assert 'total' in body
 
 
+def test_api_build_part_update_returns_part_object(client, seed_db):
+    """PATCH response must include the updated part object with all state flags.
+
+    The frontend uses the response to update the part UI without needing a
+    separate fetch; dims_unverified and thickness_warning flags control
+    display warnings in the build planner.
+    """
+    build   = seed_db['build']
+    part    = seed_db['part']
+    product = seed_db['products'][0]
+
+    response = client.patch(
+        f'/api/v1/builds/{build.build_id}/parts/{part.part_id}',
+        data=json.dumps({'product_id': product.product_id}),
+        content_type='application/json',
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['ok'] is True
+    assert 'part' in body
+    assert 'total' in body
+
+    part_data = body['part']
+    assert part_data['part_id'] == part.part_id
+    assert part_data['role'] == part.role
+    assert part_data['product_id'] == product.product_id
+    assert isinstance(part_data['dims_unverified'], bool)
+    assert isinstance(part_data['thickness_warning'], bool)
+
+
+def test_api_build_part_update_dims_unverified_flag_with_complete_product(client, seed_db):
+    """PATCH should set dims_unverified=false when product has all dimension data.
+
+    When a product has length, width, and thickness recorded, the builder can
+    rely on the dimensional checks and the flag should be false.
+    """
+    build   = seed_db['build']
+    part    = seed_db['part']
+    product = seed_db['products'][0]  # Seeded products have complete dimensions
+
+    response = client.patch(
+        f'/api/v1/builds/{build.build_id}/parts/{part.part_id}',
+        data=json.dumps({'product_id': product.product_id}),
+        content_type='application/json',
+    )
+
+    part_data = response.get_json()['part']
+    assert part_data['dims_unverified'] is False
+
+
+def test_api_build_part_update_clears_product_assignment(client, seed_db):
+    """PATCH with product_id=null should clear the product assignment.
+
+    The picker can be used to clear a part selection; dims_unverified should
+    be reset to false when no product is assigned.
+    """
+    build   = seed_db['build']
+    part    = seed_db['part']
+    product = seed_db['products'][0]
+
+    # First assign a product
+    client.patch(
+        f'/api/v1/builds/{build.build_id}/parts/{part.part_id}',
+        data=json.dumps({'product_id': product.product_id}),
+        content_type='application/json',
+    )
+
+    # Now clear it
+    response = client.patch(
+        f'/api/v1/builds/{build.build_id}/parts/{part.part_id}',
+        data=json.dumps({'product_id': None}),
+        content_type='application/json',
+    )
+
+    part_data = response.get_json()['part']
+    assert part_data['product_id'] is None
+    assert part_data['dims_unverified'] is False
+
+
 # ---------------------------------------------------------------------------
 # Build deletion (DELETE)
 # ---------------------------------------------------------------------------
