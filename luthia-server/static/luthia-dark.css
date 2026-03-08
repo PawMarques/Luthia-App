@@ -24,14 +24,14 @@
 
    DARK PALETTE
    ────────────────────────────────────────────────────────────────
-   Page bg         #f5f5f4   (warm stone-50)
-   Surface         #ffffff   (cards, sidebar, header)
-   Surface raised  #fafaf9   (table header, footer)
-   Border          #e7e5e4   (stone-200)
-   Border strong   #d6d3d1   (stone-300)
-   Text primary    #1c1917   (stone-900)
-   Text secondary  #44403c   (stone-600)
-   Text muted      #a8a29e   (stone-400)
+   Page bg         #111113   (zinc-950 variant)
+   Surface         #18181b   (cards, sidebar, header — zinc-900)
+   Surface raised  #1c1c1e   (hover/input bg — zinc-900 variant)
+   Border          #27272a   (zinc-800)
+   Border strong   #3f3f46   (zinc-700)
+   Text primary    #f4f4f5   (zinc-100)
+   Text secondary  #d4d4d8   (zinc-300)
+   Text muted      #52525b   (zinc-600)
 ═══════════════════════════════════════════════════════════════════
 */
 
@@ -1586,95 +1586,8 @@ tr.is-octave .fc-fret-num {
   border-left-color: #ef4444;
 }
 
-/* 
-═══════════════════════════════════════════════════════════════
-   LUTHIA DARK CSS — PATCH: Unified page layout colours
-═══════════════════════════════════════════════════════════════ 
-*/
 
-
-/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
-
-.page-toolbar {
-  background: #111113;
-  border-bottom: 1px solid #27272a;
-}
-
-.toolbar-stat {
-  color: #52525b;
-}
-
-.toolbar-stat strong {
-  color: #a1a1aa;
-}
-
-.toolbar-count {
-  color: #52525b;
-}
-
-.toolbar-count strong {
-  color: #a1a1aa;
-}
-
-
-/* ── RESULTS FOOTER ──────────────────────────────────────────── */
-
-.results-footer {
-  color: #52525b;
-  border-top: 1px solid #27272a;
-}
-
-/* 
-═══════════════════════════════════════════════════════════════
-   LUTHIA DARK CSS — PATCH: Unified page layout colours
-═══════════════════════════════════════════════════════════════ 
-*/
-
-
-/* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
-
-.page-toolbar {
-  background: #111113;
-  border-bottom: 1px solid #27272a;
-}
-
-.toolbar-stat {
-  color: #52525b;
-}
-
-.toolbar-stat strong {
-  color: #a1a1aa;
-}
-
-.toolbar-count {
-  color: #52525b;
-}
-
-.toolbar-count strong {
-  color: #a1a1aa;
-}
-
-
-/* ── RESULTS FOOTER ──────────────────────────────────────────── */
-
-.results-footer {
-  color: #52525b;
-  border-top: 1px solid #27272a;
-}
-
-
-/* ── SPECIES GUIDE: list + badge colours ─────────────────────── */
-
-.sg-avail-badge {
-  color: #a1a1aa;
-  border-color: #3f3f46;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   LUTHIA DARK CSS — PATCH: Unified page layout colours
-   Append these rules to luthia-dark.css
-   ═══════════════════════════════════════════════════════════════ */
-
+/* ── UNIFIED PAGE LAYOUT COLOURS ─────────────────────────── */
 
 /* ── PAGE TOOLBAR ─────────────────────────────────────────────── */
 
