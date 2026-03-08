@@ -54,7 +54,7 @@ def create_app(test_config: Optional[dict] = None) -> Flask:
 
     # Configure CORS for development only (production will be same-domain)
     if app.config.get('ENV') == 'development' or app.debug:
-        CORS(app, origins=['http://localhost:5173'])
+        CORS(app, origins=['http://localhost:5173', 'http://localhost:5174'])
 
     # Jinja2 template filter: convert a country name to its flag emoji.
     @app.template_filter('vendor_flag')
